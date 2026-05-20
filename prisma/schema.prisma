@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL")
+}
+
+model Event {
+  id                    String    @id @default(uuid())
+  name                  String
+  slug                  String    @unique
+  event_date            DateTime?
+  end_date              DateTime?
+  last_date_to_register DateTime?
+  type                  String?
+  duration              String?
+  venue                 String?
+  details               String?
+  mode                  String?    @default("OFFLINE")
+  is_paid               Boolean?   @default(false)
+  max_attendees         Int?
+  team_size             Int?       @default(1)
+  banner_url            String?
+  poster_url            String?
+  host_id               String
+  host                  User      @relation("HostedEvents", fields: [host_id], references: [id])
+  students              Student[]
+  status                String    @default("ACTIVE")
+  created_at            DateTime  @default(now())
+
+  @@map("events")
+}
+
+model Student {
+  id           String   @id @default(uuid())
+  name         String
+  email        String
+  phone        String
+  event        String
+  eventId      String?   @map("event_id")
+  eventRel     Event?    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participants Int      @default(1)
+  qr_code      String?
+  checked_in   Boolean  @default(false)
+  checked_in_at DateTime?
+  status       String   @default("REGISTERED")
+  created_at   DateTime @default(now())
+  user_id      String?
+  user         User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@map("students")
+}
+
+model User {
+  id         String   @id @default(uuid())
+  name       String
+  email      String   @unique
+  password   String
+  created_at DateTime @default(now())
+  events     Event[]  @relation("HostedEvents")
+  registrations Student[]
+
+  @@map("users")
+}
+
+model Admin {
+  id       String @id @default(uuid())
+  username String @unique
+  password String
+
+  @@map("admins")
+}
+
