@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { UserPlus, UserCog, Trash2, Key, User } from "lucide-react";
+import { UserPlus, UserCog, Trash2, Key, User, Mail, Server, Send, Loader2, CheckCircle2, XCircle, Shield, Hash } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface Admin {
@@ -9,11 +9,33 @@ interface Admin {
   username: string;
 }
 
+interface SmtpSettings {
+  SMTP_HOST: string;
+  SMTP_PORT: string;
+  SMTP_USER: string;
+  SMTP_PASS: string;
+  SMTP_FROM: string;
+}
+
 export default function SettingsPage() {
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [loading, setLoading] = useState(true);
   const [newAdmin, setNewAdmin] = useState({ username: "", password: "" });
   const [updateAdmin, setUpdateAdmin] = useState<{ id: string; username: string; password?: string } | null>(null);
+
+  // SMTP State
+  const [smtp, setSmtp] = useState<SmtpSettings>({
+    SMTP_HOST: "smtp.gmail.com",
+    SMTP_PORT: "465",
+    SMTP_USER: "",
+    SMTP_PASS: "",
+    SMTP_FROM: "manager.eventhub@gmail.com",
+  });
+  const [smtpLoading, setSmtpLoading] = useState(true);
+  const [smtpSaving, setSmtpSaving] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const fetchAdmins = async () => {
     try {
@@ -27,8 +49,26 @@ export default function SettingsPage() {
     }
   };
 
+  const fetchSmtpSettings = async () => {
+    try {
+      const res = await fetch("/api/admin/settings/email");
+      const data = await res.json();
+      if (data.success && data.settings) {
+        setSmtp((prev) => ({
+          ...prev,
+          ...data.settings,
+        }));
+      }
+    } catch {
+      // Settings not configured yet, use defaults
+    } finally {
+      setSmtpLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchAdmins();
+    fetchSmtpSettings();
   }, []);
 
   const handleAddAdmin = async (e: React.FormEvent) => {
@@ -93,6 +133,57 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveSmtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSmtpSaving(true);
+    try {
+      const res = await fetch("/api/admin/settings/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(smtp),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("SMTP settings saved successfully");
+      } else {
+        toast.error(data.error || "Failed to save settings");
+      }
+    } catch {
+      toast.error("An error occurred saving settings");
+    } finally {
+      setSmtpSaving(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    if (!testEmail) {
+      toast.error("Enter a test email address");
+      return;
+    }
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const res = await fetch("/api/admin/settings/email/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ testEmail }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTestResult({ success: true, message: data.message });
+        toast.success("Test email sent!");
+      } else {
+        setTestResult({ success: false, message: data.error || "Failed to send test email" });
+        toast.error(data.error || "Test email failed");
+      }
+    } catch {
+      setTestResult({ success: false, message: "Network error" });
+      toast.error("Network error sending test email");
+    } finally {
+      setTestSending(false);
+    }
+  };
+
   return (
     <div className="p-8 space-y-8 bg-indigo-50/10 min-h-full">
       <div className="flex flex-col gap-2">
@@ -100,10 +191,158 @@ export default function SettingsPage() {
           Admin <span className="text-sky-600">Settings</span>
         </h1>
         <p className="text-gray-500 font-medium lowercase tracking-tight">
-          Manage your administrative team and credentials.
+          Manage your administrative team, credentials, and email configuration.
         </p>
       </div>
 
+      {/* ═══════════ SMTP SETTINGS SECTION ═══════════ */}
+      <div className="bg-white border-4 border-white shadow-2xl p-8 space-y-6">
+        <div className="flex items-center gap-4 border-b-4 border-indigo-50 pb-6">
+          <div className="p-3 bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-lg shadow-sky-200">
+            <Mail className="w-6 h-6" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black uppercase tracking-widest text-gray-900">Email & SMTP Configuration</h2>
+            <p className="text-xs text-gray-400 font-bold mt-1">Configure your mail server to send registration confirmation emails instantly.</p>
+          </div>
+        </div>
+
+        {smtpLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
+          </div>
+        ) : (
+          <form onSubmit={handleSaveSmtp} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* SMTP Host */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Server className="w-3.5 h-3.5" /> SMTP Host
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-4 bg-gray-50 border-0 focus:ring-4 focus:ring-sky-200 transition-all font-bold text-sm"
+                  placeholder="smtp.gmail.com"
+                  value={smtp.SMTP_HOST}
+                  onChange={(e) => setSmtp({ ...smtp, SMTP_HOST: e.target.value })}
+                />
+              </div>
+
+              {/* SMTP Port */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Hash className="w-3.5 h-3.5" /> SMTP Port
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-4 py-4 bg-gray-50 border-0 focus:ring-4 focus:ring-sky-200 transition-all font-bold text-sm"
+                  placeholder="465"
+                  value={smtp.SMTP_PORT}
+                  onChange={(e) => setSmtp({ ...smtp, SMTP_PORT: e.target.value })}
+                />
+              </div>
+
+              {/* SMTP User */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <User className="w-3.5 h-3.5" /> SMTP Username / Email
+                </label>
+                <input
+                  type="email"
+                  className="w-full px-4 py-4 bg-gray-50 border-0 focus:ring-4 focus:ring-sky-200 transition-all font-bold text-sm"
+                  placeholder="manager.eventhub@gmail.com"
+                  value={smtp.SMTP_USER}
+                  onChange={(e) => setSmtp({ ...smtp, SMTP_USER: e.target.value })}
+                />
+              </div>
+
+              {/* SMTP Password */}
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Shield className="w-3.5 h-3.5" /> SMTP Password / App Password
+                </label>
+                <input
+                  type="password"
+                  className="w-full px-4 py-4 bg-gray-50 border-0 focus:ring-4 focus:ring-sky-200 transition-all font-bold text-sm"
+                  placeholder="••••••••••••••••"
+                  value={smtp.SMTP_PASS}
+                  onChange={(e) => setSmtp({ ...smtp, SMTP_PASS: e.target.value })}
+                />
+              </div>
+
+              {/* From Email */}
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 flex items-center gap-2">
+                  <Mail className="w-3.5 h-3.5" /> From Email Address (Sender)
+                </label>
+                <input
+                  type="email"
+                  className="w-full px-4 py-4 bg-gray-50 border-0 focus:ring-4 focus:ring-sky-200 transition-all font-bold text-sm"
+                  placeholder="manager.eventhub@gmail.com"
+                  value={smtp.SMTP_FROM}
+                  onChange={(e) => setSmtp({ ...smtp, SMTP_FROM: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={smtpSaving}
+              className="w-full bg-sky-600 text-white py-4 font-black uppercase tracking-widest hover:bg-sky-700 transition-colors shadow-lg shadow-sky-100 flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {smtpSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+              {smtpSaving ? "Saving..." : "Save SMTP Settings"}
+            </button>
+          </form>
+        )}
+
+        {/* Test Email Section */}
+        <div className="border-t-4 border-indigo-50 pt-6 space-y-4">
+          <h3 className="text-sm font-black uppercase tracking-widest text-gray-600 flex items-center gap-2">
+            <Send className="w-4 h-4 text-sky-500" /> Test Email Connection
+          </h3>
+          <p className="text-xs text-gray-400 font-medium">
+            Send a test confirmation email to verify your SMTP settings are working correctly.
+          </p>
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="email"
+                className="w-full pl-12 pr-4 py-4 bg-gray-50 border-0 focus:ring-4 focus:ring-sky-200 transition-all font-bold text-sm"
+                placeholder="test@example.com"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleTestEmail}
+              disabled={testSending}
+              className="px-8 bg-gray-900 text-white font-black uppercase tracking-widest text-xs hover:bg-gray-800 transition-colors shadow-lg flex items-center gap-2 disabled:opacity-60"
+            >
+              {testSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {testSending ? "Sending..." : "Send Test"}
+            </button>
+          </div>
+
+          {/* Test Result */}
+          {testResult && (
+            <div className={`flex items-center gap-3 p-4 ${testResult.success ? "bg-emerald-50 border-l-4 border-emerald-500" : "bg-red-50 border-l-4 border-red-500"}`}>
+              {testResult.success ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              )}
+              <p className={`text-sm font-bold ${testResult.success ? "text-emerald-700" : "text-red-700"}`}>
+                {testResult.message}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ═══════════ ADMIN MANAGEMENT SECTION ═══════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Add Admin Card */}
         <div className="bg-white border-4 border-white shadow-2xl p-8 space-y-6">

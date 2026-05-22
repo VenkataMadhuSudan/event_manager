@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import prisma from '@/lib/prisma';
 
 interface EmailParams {
   toEmail: string;
@@ -30,6 +31,32 @@ function formatFormalDate(date: Date | string | null): string {
 }
 
 /**
+ * Loads SMTP configuration from the database first, then falls back to environment variables.
+ */
+async function getSmtpConfig() {
+  let dbSettings: Record<string, string> = {};
+
+  try {
+    const settings = await prisma.systemSetting.findMany({
+      where: { key: { in: ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'] } },
+    });
+    for (const s of settings) {
+      dbSettings[s.key] = s.value;
+    }
+  } catch (error) {
+    console.warn('⚠️ Could not load SMTP settings from database, falling back to .env:', error);
+  }
+
+  return {
+    host: dbSettings['SMTP_HOST'] || process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: parseInt(dbSettings['SMTP_PORT'] || process.env.SMTP_PORT || '465'),
+    user: dbSettings['SMTP_USER'] || process.env.SMTP_USER || '',
+    pass: dbSettings['SMTP_PASS'] || process.env.SMTP_PASS || '',
+    from: dbSettings['SMTP_FROM'] || process.env.SMTP_FROM || 'manager.eventhub@gmail.com',
+  };
+}
+
+/**
  * Sends a formal academic confirmation email to the student participant.
  */
 export async function sendFormalConfirmationEmail({
@@ -42,28 +69,24 @@ export async function sendFormalConfirmationEmail({
   registrationId
 }: EmailParams) {
   try {
-    // 1. Configure the SMTP Transporter
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '465');
-    const smtpUser = process.env.SMTP_USER;
-    const smtpPass = process.env.SMTP_PASS;
-    const fromEmail = process.env.SMTP_FROM || smtpUser || 'no-reply@jntuh.ac.in';
+    // 1. Load SMTP config dynamically from DB → .env fallback
+    const smtp = await getSmtpConfig();
 
     // If SMTP details are not configured, log it but don't crash the server.
-    if (!smtpUser || !smtpPass) {
+    if (!smtp.user || !smtp.pass) {
       console.warn(
-        '⚠️ SMTP email credentials (SMTP_USER, SMTP_PASS) are not set in the .env file. Email was not sent, but registration is saved in database.'
+        '⚠️ SMTP email credentials (SMTP_USER, SMTP_PASS) are not set. Email was not sent, but registration is saved in database.'
       );
       return { success: false, error: 'Email configuration missing' };
     }
 
     const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: smtpPort,
-      secure: smtpPort === 465, // True for 465, false for 587/25
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.port === 465, // True for 465, false for 587/25
       auth: {
-        user: smtpUser,
-        pass: smtpPass
+        user: smtp.user,
+        pass: smtp.pass
       }
     });
 
@@ -74,7 +97,7 @@ export async function sendFormalConfirmationEmail({
     if (qrCodeDataUrl && qrCodeDataUrl.startsWith('data:image/png;base64,')) {
       const base64Data = qrCodeDataUrl.replace(/^data:image\/png;base64,/, '');
       attachments.push({
-        filename: 'jntuh-entry-qr.png',
+        filename: 'entry-qr.png',
         content: Buffer.from(base64Data, 'base64'),
         cid: 'qrcode' // Matches the 'cid:qrcode' in the HTML img source
       });
@@ -88,7 +111,7 @@ export async function sendFormalConfirmationEmail({
     }
 
     const formattedDate = formatFormalDate(eventDate);
-    const formalVenue = venue || 'JNTU-H Main Campus';
+    const formalVenue = venue || 'To Be Announced';
 
     // 3. Define extremely formal HTML template
     const htmlContent = `
@@ -103,13 +126,13 @@ export async function sendFormalConfirmationEmail({
           <tr>
             <td align="center">
               <!-- Academic Email Container -->
-              <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-top: 6px solid #1e3a8a; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
+              <table border="0" cellpadding="0" cellspacing="0" width="600" style="background-color: #ffffff; border: 1px solid #e2e8f0; border-top: 6px solid #0ea5e9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);">
                 
-                <!-- University Header -->
+                <!-- Header -->
                 <tr>
                   <td style="padding: 30px 40px 20px 40px; border-bottom: 1px solid #f1f5f9; text-align: center;">
-                    <h2 style="margin: 0; font-family: 'Times New Roman', Times, serif; font-size: 20px; font-weight: bold; color: #1e3a8a; letter-spacing: 1px;">JAWAHARLAL NEHRU TECHNOLOGICAL UNIVERSITY HYDERABAD</h2>
-                    <p style="margin: 5px 0 0 0; font-family: 'Arial', sans-serif; font-size: 10px; color: #64748b; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">Official Confirmation Letter</p>
+                    <h2 style="margin: 0; font-family: 'Arial', Helvetica, sans-serif; font-size: 22px; font-weight: bold; color: #0ea5e9; letter-spacing: 1px;">EVENTHUB</h2>
+                    <p style="margin: 5px 0 0 0; font-family: 'Arial', sans-serif; font-size: 10px; color: #64748b; font-weight: bold; letter-spacing: 2px; text-transform: uppercase;">Official Registration Confirmation</p>
                   </td>
                 </tr>
 
@@ -120,8 +143,8 @@ export async function sendFormalConfirmationEmail({
                       Dear <strong>${studentName}</strong>,
                     </p>
                     <p style="margin: 0 0 25px 0; font-family: 'Georgia', serif; font-size: 15px; line-height: 1.6; color: #334155; text-align: justify;">
-                      We are pleased to inform you that your registration for the upcoming university event, 
-                      <strong>&ldquo;${eventName}&rdquo;</strong>, has been successfully received and officially confirmed. We appreciate your interest in participating and contributing to our vibrant campus environment.
+                      We are pleased to inform you that your registration for the upcoming event, 
+                      <strong>&ldquo;${eventName}&rdquo;</strong>, has been successfully received and officially confirmed. We appreciate your interest in participating and contributing to our vibrant community.
                     </p>
 
                     <!-- Official Credentials Table -->
@@ -149,16 +172,16 @@ export async function sendFormalConfirmationEmail({
 
                     <!-- Formal Rules & Guidelines -->
                     <div style="margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 20px;">
-                      <h4 style="margin: 0 0 10px 0; font-family: 'Arial', sans-serif; font-size: 12px; font-weight: bold; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.5px;">Crucial Instructions for Attendees:</h4>
+                      <h4 style="margin: 0 0 10px 0; font-family: 'Arial', sans-serif; font-size: 12px; font-weight: bold; color: #0ea5e9; text-transform: uppercase; letter-spacing: 0.5px;">Important Instructions for Attendees:</h4>
                       <ul style="margin: 0; padding-left: 20px; font-family: 'Georgia', serif; font-size: 13px; line-height: 1.6; color: #475569;">
                         <li style="margin-bottom: 8px;">Please preserve this official confirmation pass on your mobile device. The QR code must be scanned at the venue gate for mandatory check-in.</li>
                         <li style="margin-bottom: 8px;">All attendees are requested to report at the designated venue at least <strong>15 minutes</strong> prior to the scheduled start time.</li>
-                        <li style="margin-bottom: 8px;">Kindly maintain academic decorum and adhere strictly to the rules and guidelines of JNTU-H during the course of the event.</li>
+                        <li style="margin-bottom: 8px;">Kindly maintain decorum and adhere strictly to the rules and guidelines during the course of the event.</li>
                       </ul>
                     </div>
 
                     <p style="margin: 30px 0 0 0; font-family: 'Georgia', serif; font-size: 14px; line-height: 1.6; color: #334155;">
-                      If you require any clarification or further support, please do not hesitate to reach out to the event coordinators or contact the JNTU-H University office.
+                      If you require any clarification or further support, please do not hesitate to reach out to the event coordinators.
                     </p>
                     <p style="margin: 20px 0 0 0; font-family: 'Georgia', serif; font-size: 14px; line-height: 1.6; color: #334155;">
                       We look forward to your active participation.
@@ -173,8 +196,7 @@ export async function sendFormalConfirmationEmail({
                       <tr>
                         <td>
                           <p style="margin: 0; font-family: 'Georgia', serif; font-size: 14px; color: #475569; font-style: italic;">With warm regards,</p>
-                          <p style="margin: 10px 0 0 0; font-family: 'Arial', sans-serif; font-size: 13px; font-weight: bold; color: #1e3a8a; text-transform: uppercase;">Organizing Secretariat</p>
-                          <p style="margin: 2px 0 0 0; font-family: 'Arial', sans-serif; font-size: 12px; color: #64748b;">Jawaharlal Nehru Technological University Hyderabad (JNTU-H)</p>
+                          <p style="margin: 10px 0 0 0; font-family: 'Arial', sans-serif; font-size: 13px; font-weight: bold; color: #0ea5e9; text-transform: uppercase;">EventHub Organizing Team</p>
                         </td>
                       </tr>
                     </table>
@@ -185,8 +207,8 @@ export async function sendFormalConfirmationEmail({
                 <tr>
                   <td style="padding: 20px 40px; background-color: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
                     <p style="margin: 0; font-family: 'Arial', sans-serif; font-size: 10px; color: #94a3b8; line-height: 1.4;">
-                      This is an officially generated university transaction notification. Please do not reply directly to this email address. 
-                      <br />&copy; ${new Date().getFullYear()} JNTU-H. All academic rights reserved.
+                      This is an automatically generated confirmation. Please do not reply directly to this email address. 
+                      <br />&copy; ${new Date().getFullYear()} EventHub. All rights reserved.
                     </p>
                   </td>
                 </tr>
@@ -205,7 +227,7 @@ OFFICIAL REGISTRATION CONFIRMATION
 
 Dear ${studentName},
 
-We are pleased to inform you that your registration for the upcoming event "${eventName}" has been successfully received and officially confirmed by the organizing committee at Jawaharlal Nehru Technological University Hyderabad (JNTU-H).
+We are pleased to inform you that your registration for the upcoming event "${eventName}" has been successfully received and officially confirmed.
 
 EVENT DETAILS:
 --------------
@@ -218,31 +240,30 @@ IMPORTANT ATTENDEE INSTRUCTIONS:
 --------------------------------
 1. Please carry a digital or printed copy of your registration ticket. The QR code must be scanned at the gate for check-in.
 2. Please arrive at least 15 minutes before the event begins.
-3. Adhere to academic decorum and university guidelines during the event.
+3. Adhere to decorum and guidelines during the event.
 
-For any queries, please reach out to the JNTU-H event coordinators.
+For any queries, please reach out to the event coordinators.
 
 With warm regards,
-Organizing Secretariat
-Jawaharlal Nehru Technological University Hyderabad (JNTU-H)
+EventHub Organizing Team
 `;
 
     // 5. Send the mail!
     const mailOptions = {
-      from: `"JNTU-H Organizing Committee" <${fromEmail}>`,
+      from: `"EventHub" <${smtp.from}>`,
       to: toEmail,
-      subject: `Official Registration Confirmation: ${eventName} – JNTU-H`,
+      subject: `Registration Confirmed: ${eventName} – EventHub`,
       text: textContent,
       html: htmlContent,
       attachments: attachments
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Formal Email sent successfully to:', toEmail, 'MessageId:', info.messageId);
+    console.log('✅ Email sent successfully to:', toEmail, 'MessageId:', info.messageId);
     return { success: true, messageId: info.messageId };
 
   } catch (error) {
-    console.error('❌ Failed to send formal confirmation email:', error);
+    console.error('❌ Failed to send confirmation email:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }

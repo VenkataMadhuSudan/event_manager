@@ -5,19 +5,22 @@ import { cn } from "@/lib/utils";
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { 
-  Loader2, 
-  ArrowLeft, 
-  Trash2, 
-  Search, 
-  Users, 
-  Download, 
-  CheckCircle2, 
-  Clock, 
+import {
+  Loader2,
+  ArrowLeft,
+  Trash2,
+  Search,
+  Users,
+  Download,
+  CheckCircle2,
+  Clock,
   BarChart3,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Mail,
+  Send
 } from 'lucide-react';
+import { sendFormalConfirmationEmail } from '@/lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
 import Papa from 'papaparse';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -31,6 +34,9 @@ export default function HostManageEventPage() {
   const [registrations, setRegistrations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
     if (slug) fetchEventData();
@@ -69,6 +75,11 @@ export default function HostManageEventPage() {
       if (res.ok) {
         toast.success("Registration deleted");
         setRegistrations(prev => prev.filter(r => r.id !== id));
+        // Also remove from selected if present
+        setSelectedParticipants(prev => {
+          prev.delete(id);
+          return new Set(prev);
+        });
       } else {
         const data = await res.json();
         toast.error(data.message || "Failed to delete");
@@ -76,6 +87,56 @@ export default function HostManageEventPage() {
     } catch (error) {
       console.error(error);
       toast.error("Network error");
+    }
+  };
+
+  const toggleParticipantSelection = (id: string) => {
+    setSelectedParticipants(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const isParticipantSelected = (id: string) => selectedParticipants.has(id);
+
+  const handleSendEmail = async () => {
+    if (selectedParticipants.size === 0) {
+      toast.error("Please select at least one participant");
+      return;
+    }
+
+    setEmailSending(true);
+    setEmailResult(null);
+
+    try {
+      const res = await fetch(`/api/host/events/${slug}/registrations/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantIds: Array.from(selectedParticipants) })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setEmailResult({ success: true, message: data.message });
+        toast.success(data.message);
+        // Clear selection after successful send
+        setSelectedParticipants(new Set());
+      } else {
+        setEmailResult({ success: false, message: data.message });
+        toast.error(data.message || "Failed to send emails");
+      }
+    } catch (error) {
+      setEmailResult({ success: false, message: "Network error" });
+      console.error(error);
+      toast.error("Network error sending emails");
+    } finally {
+      setEmailSending(false);
     }
   };
 
@@ -165,9 +226,7 @@ export default function HostManageEventPage() {
         </main>
       </div>
     );
-  }
-
-  if (!event) return null;
+  }  if (!event) return null;
 
   const filteredRegistrations = registrations.filter(r => 
     r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -197,14 +256,28 @@ export default function HostManageEventPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button 
+            <button
               onClick={handleExportCSV}
               className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-900 text-gray-900 font-black uppercase tracking-widest text-xs hover:bg-gray-900 hover:text-white transition-all active:scale-95 shadow-xl"
             >
               <Download className="w-4 h-4" />
               Export CSV
             </button>
-            <Link 
+            <button
+              onClick={handleSendEmail}
+              disabled={emailSending || selectedParticipants.size === 0}
+              className={`flex items-center gap-2 px-6 py-3 bg-white border-2 border-sky-500 text-sky-800 font-black uppercase tracking-widest text-xs hover:bg-sky-500 hover:text-white transition-all active:scale-95 shadow-xl ${emailSending || selectedParticipants.size === 0 ? 'opacity-50' : ''}`}
+            >
+              {emailSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" /> }
+              {emailSending ? "Sending..." : `Send Email (${selectedParticipants.size})`}
+            </button>
+            {emailResult && (
+              <div className={`flex items-center gap-2 p-3 px-4 rounded-lg ${emailResult.success ? "bg-emerald-50 border border-emerald-200" : "bg-red-50 border border-red-200"}`}>
+                {emailResult.success ? <CheckCircle2 className="w-4 h-4 text-emerald-600" /> : <XCircle className="w-4 h-4 text-red-600" />}
+                <span className="text-xs font-medium">{emailResult.message}</span>
+              </div>
+            )}
+            <Link
               href={`/event/${event.slug}`}
               target="_blank"
               className="p-3 bg-sky-600 text-white hover:bg-indigo-700 transition-all shadow-lg shadow-sky-600/20"
@@ -295,6 +368,7 @@ export default function HostManageEventPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-900 text-white">
+                    <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em]" />
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em]">Participant Info</th>
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em]">Contact Details</th>
                     <th className="p-6 text-[10px] font-black uppercase tracking-[0.2em]">Team Size</th>
@@ -305,61 +379,73 @@ export default function HostManageEventPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   <AnimatePresence>
-                    {filteredRegistrations.length > 0 ? filteredRegistrations.map((reg: any, idx: number) => (
-                      <motion.tr 
-                        key={reg.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: idx * 0.03 }}
-                        className="hover:bg-indigo-50/30 transition-colors group"
-                      >
-                        <td className="p-6">
-                          <div className="font-black text-gray-900 uppercase tracking-tighter text-lg mb-0.5">{reg.name}</div>
-                          <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
-                            ID: {reg.id.split('-')[0]}
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <div className="text-sm font-bold text-gray-700">{reg.email}</div>
-                          <div className="text-xs font-medium text-gray-500 mt-1">{reg.phone}</div>
-                        </td>
-                        <td className="p-6">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 font-black text-xs">
-                            <Users className="w-3 h-3" />
-                            {reg.participants}
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <div className="flex flex-col gap-1">
-                            <span className={cn(
-                              "px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-widest w-fit",
-                              reg.checked_in ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-                            )}>
-                              {reg.checked_in ? "CHECKED IN" : "PENDING"}
-                            </span>
-                            {reg.checked_in_at && (
-                              <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
-                                @ {new Date(reg.checked_in_at).toLocaleTimeString()}
+                    {filteredRegistrations.length > 0 ? (
+                      filteredRegistrations.map((reg: any, idx: number) => (
+                        <motion.tr
+                          key={reg.id}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.03 }}
+                          className="hover:bg-indigo-50/30 transition-colors group"
+                        >
+                          <td className="p-6">
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={isParticipantSelected(reg.id)}
+                                onChange={() => toggleParticipantSelection(reg.id)}
+                                className="h-4 w-4 text-sky-600 focus:ring-sky-500 border-gray-300 rounded"
+                              />
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="font-black text-gray-900 uppercase tracking-tighter text-lg mb-0.5">{reg.name}</div>
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                              ID: {reg.id.split('-')[0]}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="text-sm font-bold text-gray-700">{reg.email}</div>
+                            <div className="text-xs font-medium text-gray-500 mt-1">{reg.phone}</div>
+                          </td>
+                          <td className="p-6">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-gray-100 font-black text-xs">
+                              <Users className="w-3 h-3" />
+                              {reg.participants}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="flex flex-col gap-1">
+                              <span className={cn(
+                                "px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-widest w-fit",
+                                reg.checked_in ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                              )}>
+                                {reg.checked_in ? "CHECKED IN" : "PENDING"}
                               </span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-6">
-                          <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
-                            {new Date(reg.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                          </div>
-                        </td>
-                        <td className="p-6 text-right">
-                          <button 
-                            onClick={() => handleDeleteRegistration(reg.id)}
-                            className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                            title="Remove Registration"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </td>
-                      </motion.tr>
-                    )) : (
+                              {reg.checked_in_at && (
+                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
+                                  @ {new Date(reg.checked_in_at).toLocaleTimeString()}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-6">
+                            <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+                              {new Date(reg.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                          </td>
+                          <td className="p-6 text-right">
+                            <button
+                              onClick={() => handleDeleteRegistration(reg.id)}
+                              className="p-3 text-gray-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                              title="Remove Registration"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </td>
+                        </motion.tr>
+                      ))
+                    ) : (
                       <tr>
                         <td colSpan={6} className="p-20 text-center">
                           <div className="flex flex-col items-center opacity-30">
@@ -399,7 +485,5 @@ export default function HostManageEventPage() {
           </div>
         </div>
       </motion.div>
-    </div>
   );
 }
-
