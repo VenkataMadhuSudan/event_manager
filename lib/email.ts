@@ -102,6 +102,7 @@ export async function sendFormalConfirmationEmail({
         cid: 'qrcode' // Matches the 'cid:qrcode' in the HTML img source
       });
       qrHtmlTag = `
+      
         <div style="text-align: center; margin: 30px 0; padding: 20px; border: 1px dashed #cbd5e1; background-color: #f8fafc; border-radius: 8px;">
           <p style="margin: 0 0 10px 0; font-family: 'Georgia', serif; font-size: 13px; color: #475569; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em;">Official Entry QR Pass</p>
           <img src="cid:qrcode" alt="Entry QR Pass" style="width: 180px; height: 180px; display: block; margin: 0 auto; border: 4px solid #1e3a8a; border-radius: 4px;" />

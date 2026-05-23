@@ -18,7 +18,8 @@ import {
   ExternalLink,
   ChevronRight,
   Mail,
-  Send
+  Send,
+  XCircle
 } from 'lucide-react';
 import { sendFormalConfirmationEmail } from '@/lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -485,5 +486,6 @@ export default function HostManageEventPage() {
           </div>
         </div>
       </motion.div>
+    </div>
   );
 }
