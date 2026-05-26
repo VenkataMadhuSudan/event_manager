@@ -18,50 +18,6 @@ export async function POST(req: Request) {
     // Get requested participant size (default to 1)
     const requestedParticipants = participants ? parseInt(participants, 10) : 1;
 
-    // Check if event is cancelled or full
-    let eventRecord = null;
-    if (body.eventId) {
-      eventRecord = await prisma.event.findUnique({
-        where: { id: body.eventId }
-      });
-    } else if (event) {
-      eventRecord = await prisma.event.findFirst({
-        where: { name: event }
-      });
-    }
-
-    if (eventRecord) {
-      if (eventRecord.status === 'CANCELLED') {
-        return NextResponse.json({ error: 'This event has been cancelled and is no longer accepting registrations.' }, { status: 400 });
-      }
-
-      // Check max attendees capacity
-      if (eventRecord.max_attendees && eventRecord.max_attendees > 0) {
-        const currentRegistrationsCount = await prisma.student.aggregate({
-          where: {
-            eventId: eventRecord.id,
-            status: { not: 'CANCELLED' }
-          },
-          _sum: {
-            participants: true
-          }
-        });
-
-        const currentCount = currentRegistrationsCount._sum.participants || 0;
-
-        if (currentCount >= eventRecord.max_attendees) {
-          return NextResponse.json({ error: 'Registration failed. This event is already full!' }, { status: 400 });
-        }
-
-        if (currentCount + requestedParticipants > eventRecord.max_attendees) {
-          const remainingSpots = eventRecord.max_attendees - currentCount;
-          return NextResponse.json({ 
-            error: `Registration failed. Only ${remainingSpots} spot${remainingSpots > 1 ? 's' : ''} left, but you requested to register for ${requestedParticipants} participant${requestedParticipants > 1 ? 's' : ''}.`
-          }, { status: 400 });
-        }
-      }
-    }
-
     // Generate a unique ID (Prisma uuid() will create it, but we can generate ahead of time for QR)
     const id = crypto.randomUUID();
 
@@ -92,24 +48,73 @@ export async function POST(req: Request) {
       }
     });
 
-    // Create student in DB
-    const newStudent = await prisma.student.create({
-      data: {
-        id,
-        name,
-        email,
-        phone,
-        event,
-        eventId: eventRecord?.id || body.eventId || null,
-        participants: requestedParticipants,
-        qr_code: qrCodeDataUrl,
-        user_id,
-      },
+    // Execute validations and record creation inside a secure Prisma Transaction to prevent race conditions
+    const result = await prisma.$transaction(async (tx) => {
+      // Check if event is cancelled or full
+      let eventRecord = null;
+      if (body.eventId) {
+        eventRecord = await tx.event.findUnique({
+          where: { id: body.eventId }
+        });
+      } else if (event) {
+        eventRecord = await tx.event.findFirst({
+          where: { name: event }
+        });
+      }
+
+      if (eventRecord) {
+        if (eventRecord.status === 'CANCELLED') {
+          throw new Error('This event has been cancelled and is no longer accepting registrations.');
+        }
+
+        // Check max attendees capacity
+        if (eventRecord.max_attendees && eventRecord.max_attendees > 0) {
+          const currentRegistrationsCount = await tx.student.aggregate({
+            where: {
+              eventId: eventRecord.id,
+              status: { not: 'CANCELLED' }
+            },
+            _sum: {
+              participants: true
+            }
+          });
+
+          const currentCount = currentRegistrationsCount._sum.participants || 0;
+
+          if (currentCount >= eventRecord.max_attendees) {
+            throw new Error('Registration failed. This event is already full!');
+          }
+
+          if (currentCount + requestedParticipants > eventRecord.max_attendees) {
+            const remainingSpots = eventRecord.max_attendees - currentCount;
+            throw new Error(`Registration failed. Only ${remainingSpots} spot${remainingSpots > 1 ? 's' : ''} left, but you requested to register for ${requestedParticipants} participant${requestedParticipants > 1 ? 's' : ''}.`);
+          }
+        }
+      }
+
+      // Create student registration record
+      const newStudent = await tx.student.create({
+        data: {
+          id,
+          name,
+          email,
+          phone,
+          event,
+          eventId: eventRecord?.id || body.eventId || null,
+          participants: requestedParticipants,
+          qr_code: qrCodeDataUrl,
+          user_id,
+        },
+      });
+
+      return { newStudent, eventRecord };
     });
 
-    // Send formal confirmation email asynchronously (does not block registration response from throwing error, but waits for email to finish sending)
+    const { newStudent, eventRecord } = result;
+
+    // Send formal confirmation email asynchronously in the background (non-blocking)
     if (newStudent.email) {
-      await sendFormalConfirmationEmail({
+      sendFormalConfirmationEmail({
         toEmail: newStudent.email,
         studentName: newStudent.name,
         eventName: eventRecord?.name || newStudent.event,
@@ -117,6 +122,8 @@ export async function POST(req: Request) {
         venue: eventRecord?.venue || null,
         qrCodeDataUrl: qrCodeDataUrl,
         registrationId: newStudent.id
+      }).catch((emailError) => {
+        console.error('⚠️ Background Confirmation Email Dispatch Failed:', emailError);
       });
     }
     
@@ -128,6 +135,6 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Registration Error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return NextResponse.json({ error: 'Internal Server Error', details: errorMessage }, { status: 500 });
+    return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }

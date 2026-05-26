@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import prisma from '@/lib/prisma';
+import { formatFormalDate } from '@/lib/utils';
 
 interface EmailParams {
   toEmail: string;
@@ -12,29 +13,10 @@ interface EmailParams {
 }
 
 /**
- * Utility to format Date into an extremely elegant formal string.
- */
-function formatFormalDate(date: Date | string | null): string {
-  if (!date) return 'To Be Announced';
-  const d = typeof date === 'string' ? new Date(date) : date;
-  if (isNaN(d.getTime())) return 'To Be Announced';
-
-  return d.toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short'
-  });
-}
-
-/**
  * Loads SMTP configuration from the database first, then falls back to environment variables.
  */
 async function getSmtpConfig() {
-  let dbSettings: Record<string, string> = {};
+  const dbSettings: Record<string, string> = {};
 
   try {
     const settings = await prisma.systemSetting.findMany({

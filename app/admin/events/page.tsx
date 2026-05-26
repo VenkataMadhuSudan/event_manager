@@ -21,6 +21,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -47,6 +48,7 @@ type Event = {
 };
 
 export default function EventsAdminPage() {
+  const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -84,6 +86,11 @@ export default function EventsAdminPage() {
     
     try {
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.", { id: "session-expired" });
+        router.push("/admin/login");
+        return;
+      }
       const json = await res.json();
       if (json.success) {
         toast.success("Event and all registrations deleted");
@@ -107,6 +114,11 @@ export default function EventsAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingEvent)
       });
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.", { id: "session-expired" });
+        router.push("/admin/login");
+        return;
+      }
       const json = await res.json();
       if (json.success) {
         toast.success("Event updated successfully");
@@ -132,6 +144,11 @@ export default function EventsAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: "CANCELLED" })
       });
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.", { id: "session-expired" });
+        router.push("/admin/login");
+        return;
+      }
       const json = await res.json();
       if (json.success) {
         toast.success("Event and registrations cancelled");

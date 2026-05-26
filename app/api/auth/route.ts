@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { SignJWT } from 'jose';
 import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
   try {
@@ -13,10 +14,11 @@ export async function POST(req: Request) {
     // Check if any admins exist. If not, create the default one.
     const adminCount = await (prisma as any).admin.count();
     if (adminCount === 0) {
+      const defaultHashedPassword = await bcrypt.hash('madhu@2006', 10);
       await (prisma as any).admin.create({
         data: {
           username: 'Madhu',
-          password: 'madhu@2006',
+          password: defaultHashedPassword,
         },
       });
     }
@@ -26,7 +28,17 @@ export async function POST(req: Request) {
       where: { username },
     });
 
-    if (admin && admin.password === password) {
+    let isPasswordCorrect = false;
+    if (admin) {
+      try {
+        isPasswordCorrect = await bcrypt.compare(password, admin.password);
+      } catch {
+        // Fallback for existing plain-text password compatibility
+        isPasswordCorrect = admin.password === password;
+      }
+    }
+
+    if (admin && isPasswordCorrect) {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key');
       const token = await new SignJWT({ user: admin.username, id: admin.id })
         .setProtectedHeader({ alg: 'HS256' })

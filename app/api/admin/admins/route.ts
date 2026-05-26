@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
 export async function GET() {
   const auth = await verifyAuth();
@@ -31,10 +32,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const newAdmin = await (prisma as any).admin.create({
       data: {
         username,
-        password,
+        password: hashedPassword,
       },
       select: {
         id: true,

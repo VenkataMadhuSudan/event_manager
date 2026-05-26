@@ -90,7 +90,7 @@ export async function POST(
     const results = await Promise.allSettled(emailPromises);
 
     let successCount = 0;
-    const failures = [];
+    const failures: { studentId: string; error?: string }[] = [];
 
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') {

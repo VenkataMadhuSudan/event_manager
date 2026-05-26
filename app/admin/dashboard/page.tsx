@@ -16,6 +16,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -32,6 +33,7 @@ type Student = {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,6 +43,11 @@ export default function DashboardPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/students");
+      if (res.status === 401) {
+        toast.error("Session expired. Please log in again.", { id: "session-expired" });
+        router.push("/admin/login");
+        return;
+      }
       const json = await res.json();
       if (json.success) {
         setStudents(json.students);

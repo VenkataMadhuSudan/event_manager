@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { verifyAuth } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await verifyAuth();
@@ -10,11 +11,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { username, password } = await req.json();
 
   try {
+    let hashedPassword = undefined;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
     const updatedAdmin = await (prisma as any).admin.update({
       where: { id },
       data: {
         ...(username && { username }),
-        ...(password && { password }),
+        ...(hashedPassword && { password: hashedPassword }),
       },
     });
 
