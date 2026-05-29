@@ -18,12 +18,8 @@ export async function POST(req: Request) {
     // Get requested participant size (default to 1)
     const requestedParticipants = participants ? parseInt(participants, 10) : 1;
 
-    // Generate a unique ID (Prisma uuid() will create it, but we can generate ahead of time for QR)
+    // Generate a unique ID
     const id = crypto.randomUUID();
-
-    // Generate verification URL
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const verificationUrl = `${appUrl}/api/verify?id=${id}`;
 
     // Get user_id if logged in
     const cookieStore = await cookies();
@@ -38,19 +34,9 @@ export async function POST(req: Request) {
       } catch {}
     }
 
-    // Generate QR code base64
-    const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
-      width: 400,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#ffffff'
-      }
-    });
-
     // Execute validations and record creation inside a secure Prisma Transaction to prevent race conditions
     const result = await prisma.$transaction(async (tx) => {
-      // Check if event is cancelled or full
+      // Resolve the event record
       let eventRecord = null;
       if (body.eventId) {
         eventRecord = await tx.event.findUnique({
@@ -67,29 +53,47 @@ export async function POST(req: Request) {
           throw new Error('This event has been cancelled and is no longer accepting registrations.');
         }
 
-        // Check max attendees capacity
-        if (eventRecord.max_attendees && eventRecord.max_attendees > 0) {
-          const currentRegistrationsCount = await tx.student.aggregate({
-            where: {
-              eventId: eventRecord.id,
-              status: { not: 'CANCELLED' }
-            },
-            _sum: {
-              participants: true
-            }
-          });
-
-          const currentCount = currentRegistrationsCount._sum.participants || 0;
-
-          if (currentCount >= eventRecord.max_attendees) {
-            throw new Error('Registration failed. This event is already full!');
-          }
-
-          if (currentCount + requestedParticipants > eventRecord.max_attendees) {
-            const remainingSpots = eventRecord.max_attendees - currentCount;
-            throw new Error(`Registration failed. Only ${remainingSpots} spot${remainingSpots > 1 ? 's' : ''} left, but you requested to register for ${requestedParticipants} participant${requestedParticipants > 1 ? 's' : ''}.`);
-          }
+        // Enforce registration deadline
+        if (eventRecord.last_date_to_register && new Date() > new Date(eventRecord.last_date_to_register)) {
+          throw new Error('Registration deadline has passed. This event is no longer accepting registrations.');
         }
+      }
+
+      // Determine registration status: REGISTERED or WAITLISTED
+      let registrationStatus = 'REGISTERED';
+      let qrCodeDataUrl: string | null = null;
+
+      if (eventRecord && eventRecord.max_attendees && eventRecord.max_attendees > 0) {
+        const currentRegistrationsCount = await tx.student.aggregate({
+          where: {
+            eventId: eventRecord.id,
+            status: 'REGISTERED'
+          },
+          _sum: {
+            participants: true
+          }
+        });
+
+        const currentCount = currentRegistrationsCount._sum.participants || 0;
+
+        if (currentCount >= eventRecord.max_attendees) {
+          // Event is full — waitlist the registrant
+          registrationStatus = 'WAITLISTED';
+        } else if (currentCount + requestedParticipants > eventRecord.max_attendees) {
+          const remainingSpots = eventRecord.max_attendees - currentCount;
+          throw new Error(`Registration failed. Only ${remainingSpots} spot${remainingSpots > 1 ? 's' : ''} left, but you requested ${requestedParticipants} participant${requestedParticipants > 1 ? 's' : ''}.`);
+        }
+      }
+
+      // Generate QR code only for confirmed registrations (not waitlisted)
+      if (registrationStatus === 'REGISTERED') {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        const verificationUrl = `${appUrl}/api/verify?id=${id}`;
+        qrCodeDataUrl = await QRCode.toDataURL(verificationUrl, {
+          width: 400,
+          margin: 2,
+          color: { dark: '#000000', light: '#ffffff' }
+        });
       }
 
       // Create student registration record
@@ -103,24 +107,25 @@ export async function POST(req: Request) {
           eventId: eventRecord?.id || body.eventId || null,
           participants: requestedParticipants,
           qr_code: qrCodeDataUrl,
+          status: registrationStatus,
           user_id,
         },
       });
 
-      return { newStudent, eventRecord };
+      return { newStudent, eventRecord, registrationStatus };
     });
 
-    const { newStudent, eventRecord } = result;
+    const { newStudent, eventRecord, registrationStatus } = result;
 
-    // Send formal confirmation email asynchronously in the background (non-blocking)
-    if (newStudent.email) {
+    // Send confirmation email only for confirmed registrations (not waitlisted)
+    if (registrationStatus === 'REGISTERED' && newStudent.email) {
       sendFormalConfirmationEmail({
         toEmail: newStudent.email,
         studentName: newStudent.name,
         eventName: eventRecord?.name || newStudent.event,
         eventDate: eventRecord?.event_date || null,
         venue: eventRecord?.venue || null,
-        qrCodeDataUrl: qrCodeDataUrl,
+        qrCodeDataUrl: newStudent.qr_code || '',
         registrationId: newStudent.id
       }).catch((emailError) => {
         console.error('⚠️ Background Confirmation Email Dispatch Failed:', emailError);
@@ -129,7 +134,8 @@ export async function POST(req: Request) {
     
     return NextResponse.json({
       success: true,
-      student: newStudent
+      student: newStudent,
+      waitlisted: registrationStatus === 'WAITLISTED',
     });
 
   } catch (error) {
@@ -138,3 +144,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: errorMessage }, { status: 400 });
   }
 }
+

@@ -15,6 +15,7 @@ model Event {
   event_date            DateTime?
   end_date              DateTime?
   last_date_to_register DateTime?
+  last_date_to_cancel   DateTime?
   type                  String?
   duration              String?
   venue                 String?

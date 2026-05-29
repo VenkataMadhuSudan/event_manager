@@ -2,7 +2,7 @@
 
 import { useState, useEffect, use, useCallback } from 'react';
 import toast from 'react-hot-toast';
-import { Download, Loader2, ArrowLeft, User, Mail, Phone, Users, CheckCircle2 } from 'lucide-react';
+import { Download, Loader2, ArrowLeft, User, Mail, Phone, Users, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -13,12 +13,15 @@ interface Event {
   name: string;
   slug: string;
   event_date?: string;
+  end_date?: string;
   last_date_to_register?: string;
+  last_date_to_cancel?: string;
   type?: string;
   duration?: string;
   venue?: string;
   details?: string;
   status?: string;
+  mode?: string;
   banner_url?: string;
   poster_url?: string;
   max_attendees?: number;
@@ -34,6 +37,7 @@ interface Student {
   participants: number;
   qr_code: string;
   status: string;
+  created_at?: string;
 }
 
 interface UserProfile {
@@ -52,6 +56,7 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
   const [isRegistered, setIsRegistered] = useState(false);
   const [bannerError, setBannerError] = useState(false);
   const [posterError, setPosterError] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   const fetchEventDetails = useCallback(async () => {
     try {
@@ -121,7 +126,11 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
       const json = await res.json();
 
       if (res.ok && json.success) {
-        toast.success("Registration Successful!");
+        if (json.waitlisted) {
+          toast.success("You've been added to the waitlist! We'll notify you if a spot opens up.", { duration: 5000 });
+        } else {
+          toast.success("Registration Successful! Check your email for the confirmation.");
+        }
         setSuccessData(json.student);
         setIsRegistered(true);
         fetchEventDetails();
@@ -133,6 +142,32 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
       toast.error("Network error. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!successData?.id) return;
+    if (!confirm('Are you sure you want to cancel your registration? This action cannot be undone.')) return;
+    setCancelling(true);
+    try {
+      const res = await fetch('/api/register/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ registrationId: successData.id }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) {
+        toast.success('Registration cancelled successfully.');
+        setSuccessData(null);
+        setIsRegistered(false);
+        fetchEventDetails();
+      } else {
+        toast.error(json.error || 'Could not cancel registration.');
+      }
+    } catch {
+      toast.error('Network error. Please try again.');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -552,6 +587,25 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
   const currentAttendees = eventDetails?.current_attendees || 0;
   const isFull = maxAttendees ? currentAttendees >= maxAttendees : false;
 
+  // Deadline helpers
+  const now = new Date();
+  const registrationDeadlinePassed = eventDetails?.last_date_to_register
+    ? now > new Date(eventDetails.last_date_to_register)
+    : false;
+  const cancellationDeadlinePassed = eventDetails?.last_date_to_cancel
+    ? now > new Date(eventDetails.last_date_to_cancel)
+    : false;
+  const eventStarted = eventDetails?.event_date
+    ? now > new Date(eventDetails.event_date)
+    : false;
+  const canCancel = isRegistered && successData?.status !== 'CANCELLED' && !cancellationDeadlinePassed && !eventStarted;
+
+  const formatDateTime = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, {
+      dateStyle: 'full',
+      timeStyle: 'short',
+    });
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       {/* Hero Banner Section */}
@@ -597,8 +651,8 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
               <div className="flex flex-wrap gap-6 mb-10">
                 {eventDetails.event_date && (
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Date</span>
-                    <span className="text-xl font-black text-gray-900 uppercase tracking-tighter">{new Date(eventDetails.event_date).toLocaleDateString(undefined, { dateStyle: 'full' })}</span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Date &amp; Time</span>
+                    <span className="text-xl font-black text-gray-900 uppercase tracking-tighter">{formatDateTime(eventDetails.event_date)}</span>
                   </div>
                 )}
                 <div className="w-px h-12 bg-gray-100 hidden md:block" />
@@ -628,8 +682,20 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
                 )}
                 {eventDetails.last_date_to_register && (
                   <div>
-                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Deadline</div>
-                    <div className="font-black text-red-600">{new Date(eventDetails.last_date_to_register).toLocaleDateString()}</div>
+                    <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Reg. Deadline</div>
+                    <div className={`font-black text-sm ${registrationDeadlinePassed ? 'text-gray-400 line-through' : 'text-red-600'}`}>
+                      {formatDateTime(eventDetails.last_date_to_register)}
+                    </div>
+                    {registrationDeadlinePassed && <div className="text-[9px] text-gray-400 font-bold uppercase">Closed</div>}
+                  </div>
+                )}
+                {eventDetails.last_date_to_cancel && (
+                  <div>
+                    <div className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Cancel By</div>
+                    <div className={`font-black text-sm ${cancellationDeadlinePassed ? 'text-gray-400 line-through' : 'text-amber-600'}`}>
+                      {formatDateTime(eventDetails.last_date_to_cancel)}
+                    </div>
+                    {cancellationDeadlinePassed && <div className="text-[9px] text-gray-400 font-bold uppercase">Expired</div>}
                   </div>
                 )}
               </div>
@@ -658,29 +724,45 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
                   key="ticket"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-t-[12px] border-blue-500 p-8 md:p-12 space-y-10"
+                  className={`bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-t-[12px] p-8 md:p-12 space-y-10 ${
+                    successData.status === 'WAITLISTED' ? 'border-amber-400' : 'border-blue-500'
+                  }`}
                 >
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-500 text-white flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6" />
+                      <div className={`w-10 h-10 text-white flex items-center justify-center ${
+                        successData.status === 'WAITLISTED' ? 'bg-amber-400' : 'bg-blue-500'
+                      }`}>
+                        {successData.status === 'WAITLISTED' ? <Clock className="w-6 h-6" /> : <CheckCircle2 className="w-6 h-6" />}
                       </div>
-                      <h2 className="text-3xl font-black uppercase tracking-tighter italic leading-none">Registered</h2>
+                      <h2 className="text-3xl font-black uppercase tracking-tighter italic leading-none">
+                        {successData.status === 'WAITLISTED' ? 'Waitlisted' : 'Registered'}
+                      </h2>
                     </div>
-                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">Entry Ticket Secured</p>
+                    <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest">
+                      {successData.status === 'WAITLISTED'
+                        ? "You're on the waitlist — we'll email you if a spot opens"
+                        : 'Entry Ticket Secured'}
+                    </p>
                   </div>
 
-                  <div className="flex justify-center p-8 bg-gray-50 border-4 border-dashed border-gray-200 shadow-inner group">
-                    {successData.qr_code && (
-                      <Image
-                        src={successData.qr_code}
-                        alt="Entry QR"
-                        width={256}
-                        height={256}
-                        className="object-contain"
-                      />
-                    )}
-                  </div>
+                  {successData.status === 'WAITLISTED' ? (
+                    <div className="p-6 bg-amber-50 border border-amber-100 rounded-lg text-center space-y-2">
+                      <p className="text-sm font-bold text-amber-800">You are in the waitlist queue. If someone cancels, you&apos;ll be automatically confirmed and receive your QR ticket by email.</p>
+                    </div>
+                  ) : (
+                    <div className="flex justify-center p-8 bg-gray-50 border-4 border-dashed border-gray-200 shadow-inner group">
+                      {successData.qr_code && (
+                        <Image
+                          src={successData.qr_code}
+                          alt="Entry QR"
+                          width={256}
+                          height={256}
+                          className="object-contain"
+                        />
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-4">
                     <div className="flex justify-between items-end border-b border-gray-100 pb-4">
@@ -696,64 +778,122 @@ export default function EventRegistrationPage({ params }: { params: Promise<{ sl
                   </div>
 
                   <div className="flex flex-col gap-4">
-                    <button
-                      onClick={downloadQR}
-                      className="w-full py-5 bg-green-600 text-white font-black text-xs uppercase tracking-[0.3em] transition-all shadow-xl hover:bg-green-700 flex items-center justify-center gap-3"
-                    >
-                      <Download className="w-5 h-5" />
-                      Download Ticket
-                    </button>
-                    {!isRegistered && (
-                       <button
-                       onClick={() => { setSuccessData(null); fetchEventDetails(); }}
-                       className="w-full py-4 border-2 border-gray-900 text-gray-900 font-black transition-all uppercase tracking-widest text-[10px] hover:bg-gray-900 hover:text-white"
-                     >
-                       Register Another
-                     </button>
+                    {successData.status !== 'WAITLISTED' && (
+                      <button
+                        onClick={downloadQR}
+                        className="w-full py-5 bg-green-600 text-white font-black text-xs uppercase tracking-[0.3em] transition-all shadow-xl hover:bg-green-700 flex items-center justify-center gap-3"
+                      >
+                        <Download className="w-5 h-5" />
+                        Download Ticket
+                      </button>
+                    )}
+                    {canCancel && (
+                      <button
+                        onClick={handleCancel}
+                        disabled={cancelling}
+                        className="w-full py-4 border-2 border-red-500 text-red-600 font-black transition-all uppercase tracking-widest text-[10px] hover:bg-red-500 hover:text-white flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {cancelling ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                        {cancelling ? 'Cancelling...' : 'Cancel Registration'}
+                      </button>
+                    )}
+                    {isRegistered && !canCancel && !eventStarted && eventDetails?.last_date_to_cancel && cancellationDeadlinePassed && (
+                      <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        Cancellation deadline has passed
+                      </p>
                     )}
                   </div>
                 </motion.div>
               ) : isFull ? (
                 <motion.div 
-                  key="sold-out"
+                  key="waitlist"
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-t-[12px] border-amber-500 p-8 md:p-12 space-y-8"
+                  className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-t-[12px] border-amber-400 p-8 md:p-12 space-y-8"
                 >
                   <div className="space-y-2">
                     <span className="inline-block px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 text-[9px] font-black uppercase tracking-[0.3em] rounded">
-                      Registration Closed
+                      Event Full
                     </span>
                     <h2 className="text-4xl font-black uppercase tracking-tighter italic leading-none text-gray-900 mt-2">
-                      SOLD <span className="text-amber-500">OUT</span>
+                      JOIN THE <span className="text-amber-400">WAITLIST</span>
                     </h2>
-                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">This event has reached maximum capacity</p>
-                  </div>
-
-                  <div className="p-8 bg-amber-50/50 border border-amber-100 text-center space-y-4 rounded-lg relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 to-transparent pointer-events-none" />
-                    <div className="w-16 h-16 bg-amber-500 text-white flex items-center justify-center rounded-full mx-auto shadow-lg shadow-amber-500/20">
-                      <Users className="w-8 h-8" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs font-black uppercase tracking-widest text-amber-800">Capacity Reached</p>
-                      <p className="text-2xl font-black text-gray-900 tracking-tighter">
-                        {maxAttendees} / {maxAttendees} Spots Filled
-                      </p>
-                    </div>
-                    <p className="text-gray-500 text-xs font-medium leading-relaxed max-w-xs mx-auto">
-                      All tickets for this event have been claimed. Thank you for your interest! Keep an eye out for our upcoming sessions.
+                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">
+                      All {maxAttendees} spots are taken — secure your place in the queue
                     </p>
                   </div>
 
-                  <div className="flex flex-col gap-4">
-                    <Link
-                      href="/"
-                      className="w-full py-5 bg-gray-900 text-white font-black text-xs uppercase tracking-[0.3em] transition-all shadow-xl hover:bg-black flex items-center justify-center gap-3 text-center"
-                    >
-                      Browse Other Events
-                    </Link>
+                  <div className="p-5 bg-amber-50/60 border border-amber-100 rounded-lg text-sm text-amber-800 font-medium leading-relaxed">
+                    If a registered participant cancels, you&apos;ll be automatically promoted and receive a confirmation email with your QR ticket.
                   </div>
+
+                  <form className="space-y-6" onSubmit={handleSubmit}>
+                    <div className="space-y-2">
+                      <label htmlFor="wl-name" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <User className="w-3 h-3" /> Full Name
+                      </label>
+                      <input
+                        id="wl-name" name="name" type="text" required
+                        placeholder="Ex: Alexander Pierce"
+                        defaultValue={user?.name || ''}
+                        className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-100 focus:border-amber-400 outline-none font-bold text-lg transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="wl-email" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Mail className="w-3 h-3" /> Email
+                      </label>
+                      <input
+                        id="wl-email" name="email" type="email" required
+                        placeholder="alex@example.com"
+                        defaultValue={user?.email || ''}
+                        className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-100 focus:border-amber-400 outline-none font-bold text-lg transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="wl-phone" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Phone className="w-3 h-3" /> Phone Number
+                      </label>
+                      <input
+                        id="wl-phone" name="phone" type="tel" required
+                        placeholder="+91 00000 00000"
+                        className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-100 focus:border-amber-400 outline-none font-bold text-lg transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="wl-participants" className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                        <Users className="w-3 h-3" /> Participants
+                      </label>
+                      <input
+                        id="wl-participants" name="participants" type="number" min="1" max="10" defaultValue="1"
+                        className="w-full px-0 py-3 bg-transparent border-b-2 border-gray-100 focus:border-amber-400 outline-none font-bold text-lg transition-all"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading || registrationDeadlinePassed}
+                      className="w-full py-6 bg-amber-400 text-white font-black text-sm uppercase tracking-[0.3em] transition-all shadow-2xl hover:bg-amber-500 flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
+                    >
+                      {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Clock className="w-5 h-5" />}
+                      {registrationDeadlinePassed ? 'Registration Closed' : 'Join Waitlist'}
+                    </button>
+                  </form>
+                </motion.div>
+              ) : registrationDeadlinePassed ? (
+                <motion.div
+                  key="deadline-passed"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.2)] border-t-[12px] border-gray-400 p-8 md:p-12 space-y-8"
+                >
+                  <div className="space-y-2">
+                    <span className="inline-block px-3 py-1 bg-gray-100 border border-gray-200 text-gray-500 text-[9px] font-black uppercase tracking-[0.3em] rounded">Registration Closed</span>
+                    <h2 className="text-4xl font-black uppercase tracking-tighter italic leading-none text-gray-900 mt-2">Registration <span className="text-gray-400">Ended</span></h2>
+                    <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">The deadline to register for this event has passed.</p>
+                  </div>
+                  <Link href="/" className="w-full py-5 bg-gray-900 text-white font-black text-xs uppercase tracking-[0.3em] transition-all shadow-xl hover:bg-black flex items-center justify-center gap-3">
+                    Browse Other Events
+                  </Link>
                 </motion.div>
               ) : (
                 <motion.div 

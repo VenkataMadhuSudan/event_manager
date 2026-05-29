@@ -56,6 +56,7 @@ export default function HostEventView({
   const [eventDate, setEventDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [lastDateToRegister, setLastDateToRegister] = useState('');
+  const [lastDateToCancel, setLastDateToCancel] = useState('');
   const [eventType, setEventType] = useState('');
   const [eventDuration, setEventDuration] = useState('');
   const [eventVenue, setEventVenue] = useState('');
@@ -90,6 +91,7 @@ export default function HostEventView({
           event_date: eventDate,
           end_date: endDate,
           last_date_to_register: lastDateToRegister,
+          last_date_to_cancel: lastDateToCancel,
           type: eventType,
           duration: eventDuration,
           venue: eventVenue,
@@ -114,6 +116,7 @@ export default function HostEventView({
         setEventDate('');
         setEndDate('');
         setLastDateToRegister('');
+        setLastDateToCancel('');
         setEventType('');
         setEventDuration('');
         setEventVenue('');
@@ -290,9 +293,9 @@ export default function HostEventView({
                 <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-black">Start Date</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-black">Event Start Date & Time</label>
                       <input
-                        type="date"
+                        type="datetime-local"
                         value={eventDate}
                         onChange={(e) => setEventDate(e.target.value)}
                         required
@@ -300,9 +303,9 @@ export default function HostEventView({
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-black">End Date</label>
+                      <label className="text-[10px] font-black uppercase tracking-widest text-black">Event End Date & Time</label>
                       <input
-                        type="date"
+                        type="datetime-local"
                         value={endDate}
                         onChange={(e) => setEndDate(e.target.value)}
                         className="w-full px-6 py-5 bg-white/5 border border-white/10 focus:border-sky-500 outline-none font-bold transition-all text-black"
@@ -314,13 +317,26 @@ export default function HostEventView({
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-black">Registration Deadline</label>
                       <input
-                        type="date"
+                        type="datetime-local"
                         value={lastDateToRegister}
                         onChange={(e) => setLastDateToRegister(e.target.value)}
                         required
                         className="w-full px-6 py-5 bg-white/5 border border-white/10 focus:border-sky-500 outline-none font-bold transition-all text-black"
                       />
                     </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-black">Cancellation Deadline</label>
+                      <input
+                        type="datetime-local"
+                        value={lastDateToCancel}
+                        onChange={(e) => setLastDateToCancel(e.target.value)}
+                        className="w-full px-6 py-5 bg-white/5 border border-white/10 focus:border-sky-500 outline-none font-bold transition-all text-black"
+                      />
+                      <p className="text-[9px] text-gray-400 font-medium">After this, participants cannot cancel their registration</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
                       <label className="text-[10px] font-black uppercase tracking-widest text-gray-500">Duration</label>
                       <input
