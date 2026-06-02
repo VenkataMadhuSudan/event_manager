@@ -1,4 +1,4 @@
-import { Calendar, QrCode, ShieldCheck, Plus } from 'lucide-react';
+import { Calendar, QrCode, ShieldCheck, Plus, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { Dispatch, SetStateAction } from 'react';
@@ -7,11 +7,12 @@ type ViewMode = 'selection' | 'host' | 'register';
 
 interface HeroViewProps {
   user: { name: string; email: string } | null;
+  loadingUser: boolean;
   setView: Dispatch<SetStateAction<ViewMode>>;
   resetHostFlow: () => void;
 }
 
-export default function HeroView({ user, setView, resetHostFlow }: HeroViewProps) {
+export default function HeroView({ user, loadingUser, setView, resetHostFlow }: HeroViewProps) {
   const router = useRouter();
 
   return (
@@ -36,7 +37,9 @@ export default function HeroView({ user, setView, resetHostFlow }: HeroViewProps
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8">
           <button
+            disabled={loadingUser}
             onClick={() => {
+              if (loadingUser) return;
               if (!user) {
                 toast.error('Please sign in to create an event');
                 router.push('/login');
@@ -45,9 +48,13 @@ export default function HeroView({ user, setView, resetHostFlow }: HeroViewProps
               resetHostFlow();
               setView('host');
             }}
-            className="group px-10 py-5 bg-gray-900 text-white font-black uppercase tracking-widest text-sm hover:bg-sky-600 transition-all duration-300 shadow-xl active:scale-95 flex items-center gap-2"
+            className="group px-10 py-5 bg-gray-900 text-white font-black uppercase tracking-widest text-sm hover:bg-sky-600 disabled:bg-gray-700 disabled:cursor-not-allowed transition-all duration-300 shadow-xl active:scale-95 flex items-center gap-2"
           >
-            Create Event <Plus className="w-4 h-4" />
+            {loadingUser ? (
+              <>Checking session <Loader2 className="w-4 h-4 animate-spin" /></>
+            ) : (
+              <>Create Event <Plus className="w-4 h-4" /></>
+            )}
           </button>
           <button
             onClick={() => setView('register')}

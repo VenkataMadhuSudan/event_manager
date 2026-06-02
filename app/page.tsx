@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { Calendar, Menu, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import IntroScreen from '@/components/IntroScreen';
 import HeroView from '@/components/home/HeroView';
 import HostEventView, { Event } from '@/components/home/HostEventView';
@@ -11,8 +11,9 @@ import ExploreEventsView from '@/components/home/ExploreEventsView';
 
 type ViewMode = 'selection' | 'host' | 'register';
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   // Shared state
   const [view, setView] = useState<ViewMode>('selection');
@@ -20,23 +21,42 @@ export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
   
   // Auth state
   const [user, setUser] = useState<{ name: string, email: string } | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   // Host flow state
   const [currentStep, setCurrentStep] = useState(1);
   const [createdEvent, setCreatedEvent] = useState<Event | null>(null);
+  
+  // Handle URL query parameters for host mode transition
+  useEffect(() => {
+    const hostParam = searchParams.get('host');
+    if (hostParam === 'true') {
+      setView('host');
+    }
+  }, [searchParams]);
 
-  // Handle hydration mismatch by setting origin after mount
+  // Handle hydration mismatch and load data
   useEffect(() => {
     setOrigin(window.location.origin);
     fetchEvents();
     fetchUser();
   }, []);
 
+  // Handle one-time intro screen presentation using session storage
+  useEffect(() => {
+    const hasSeenIntro = sessionStorage.getItem('hasSeenIntro');
+    if (!hasSeenIntro) {
+      setShowIntro(true);
+      sessionStorage.setItem('hasSeenIntro', 'true');
+    }
+  }, []);
+
   const fetchUser = async () => {
+    setLoadingUser(true);
     try {
       const res = await fetch('/api/user/me');
       if (res.ok) {
@@ -45,7 +65,10 @@ export default function Home() {
           setUser(data.user);
         }
       }
-    } catch (err) { }
+    } catch (err) { 
+    } finally {
+      setLoadingUser(false);
+    }
   };
 
   const fetchEvents = async () => {
@@ -140,7 +163,7 @@ export default function Home() {
 
         <main className="flex-1 flex flex-col items-center justify-start">
           {view === 'selection' && (
-            <HeroView user={user} setView={setView} resetHostFlow={resetHostFlow} />
+            <HeroView user={user} loadingUser={loadingUser} setView={setView} resetHostFlow={resetHostFlow} />
           )}
 
           {view === 'host' && (
@@ -168,5 +191,17 @@ export default function Home() {
         </main>
       </div>
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 text-white">
+        <Calendar className="h-12 w-12 animate-pulse text-purple-400" />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }
