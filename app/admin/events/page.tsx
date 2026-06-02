@@ -2,18 +2,18 @@
 
 import { useState, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
-import { 
-  Search, 
-  Trash2, 
-  ExternalLink, 
-  Copy, 
-  Check, 
-  Loader2, 
-  Calendar, 
-  Plus, 
-  XCircle, 
-  Pencil, 
-  Save, 
+import {
+  Search,
+  Trash2,
+  ExternalLink,
+  Copy,
+  Check,
+  Loader2,
+  Calendar,
+  Plus,
+  XCircle,
+  Pencil,
+  Save,
   X,
   LayoutGrid,
   Link2,
@@ -54,7 +54,7 @@ export default function EventsAdminPage() {
   const [search, setSearch] = useState("");
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [origin, setOrigin] = useState("");
-  
+
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [updateLoading, setUpdateLoading] = useState(false);
@@ -83,7 +83,7 @@ export default function EventsAdminPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure? This will delete the event and ALL associated registrations permanently.")) return;
-    
+
     try {
       const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
       if (res.status === 401) {
@@ -189,8 +189,8 @@ export default function EventsAdminPage() {
   };
 
   const filteredEvents = useMemo(() => {
-    return events.filter(e => 
-      e.name.toLowerCase().includes(search.toLowerCase()) || 
+    return events.filter(e =>
+      e.name.toLowerCase().includes(search.toLowerCase()) ||
       e.slug.toLowerCase().includes(search.toLowerCase())
     );
   }, [events, search]);
@@ -199,7 +199,7 @@ export default function EventsAdminPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-10">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
@@ -212,12 +212,12 @@ export default function EventsAdminPage() {
             <LayoutGrid className="w-4 h-4" /> Global Catalog Management
           </p>
         </motion.div>
-        
-        <motion.div 
+
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <Link 
+          <Link
             href="/"
             className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-none hover:opacity-90 font-black transition-all shadow-xl uppercase tracking-widest text-xs"
           >
@@ -232,9 +232,9 @@ export default function EventsAdminPage() {
         <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50">
           <div className="relative max-w-2xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
-            <input 
-              type="text" 
-              placeholder="Search by event name or slug..." 
+            <input
+              type="text"
+              placeholder="Search by event name or slug..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold"
@@ -270,7 +270,7 @@ export default function EventsAdminPage() {
                   </tr>
                 ) : (
                   filteredEvents.map((event, i) => (
-                    <motion.tr 
+                    <motion.tr
                       key={event.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
@@ -290,11 +290,10 @@ export default function EventsAdminPage() {
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <span className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest border-2 ${
-                          event.status === 'CANCELLED' 
-                          ? 'bg-red-50 text-red-700 border-red-200' 
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        }`}>
+                        <span className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest border-2 ${event.status === 'CANCELLED'
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          }`}>
                           {event.status || 'ACTIVE'}
                         </span>
                       </td>
@@ -340,7 +339,7 @@ export default function EventsAdminPage() {
       <AnimatePresence>
         {isEditModalOpen && editingEvent && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -360,19 +359,19 @@ export default function EventsAdminPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Event Identifier</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={editingEvent.name}
-                      onChange={(e) => setEditingEvent({...editingEvent, name: e.target.value})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, name: e.target.value })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-black text-xl transition-all italic uppercase tracking-tighter"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Category Tag</label>
-                    <select 
+                    <select
                       value={editingEvent.type}
-                      onChange={(e) => setEditingEvent({...editingEvent, type: e.target.value})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, type: e.target.value })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-black uppercase tracking-widest text-xs appearance-none"
                     >
                       <option value="Conference">Conference</option>
@@ -386,56 +385,56 @@ export default function EventsAdminPage() {
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Terminal / Venue</label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       value={editingEvent.venue || ''}
-                      onChange={(e) => setEditingEvent({...editingEvent, venue: e.target.value})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, venue: e.target.value })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Commencement</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={editingEvent.event_date || ''}
-                      onChange={(e) => setEditingEvent({...editingEvent, event_date: e.target.value})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, event_date: e.target.value })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Termination</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={editingEvent.end_date || ''}
-                      onChange={(e) => setEditingEvent({...editingEvent, end_date: e.target.value})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, end_date: e.target.value })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Registration Seal</label>
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={editingEvent.last_date_to_register || ''}
-                      onChange={(e) => setEditingEvent({...editingEvent, last_date_to_register: e.target.value})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, last_date_to_register: e.target.value })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Capacity Load</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       value={editingEvent.max_attendees || ''}
-                      onChange={(e) => setEditingEvent({...editingEvent, max_attendees: parseInt(e.target.value) || 0})}
+                      onChange={(e) => setEditingEvent({ ...editingEvent, max_attendees: parseInt(e.target.value) || 0 })}
                       className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
                     />
                   </div>
 
                   <div className="md:col-span-2 flex gap-4 pt-10">
-                    <button 
+                    <button
                       type="submit"
                       disabled={updateLoading}
                       className="flex-1 bg-black dark:bg-white text-white dark:text-black py-6 font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-2xl active:scale-95 disabled:opacity-50"
@@ -443,7 +442,7 @@ export default function EventsAdminPage() {
                       {updateLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                       Sync Changes
                     </button>
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setIsEditModalOpen(false)}
                       className="flex-1 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 py-6 font-black uppercase tracking-widest text-xs hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
