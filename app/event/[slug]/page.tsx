@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, use, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { Download, Loader2, ArrowLeft, User, Mail, Phone, Users, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -46,8 +47,9 @@ interface UserProfile {
   email: string;
 }
 
-export default function EventRegistrationPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params);
+export default function EventRegistrationPage() {
+  const params = useParams();
+  const slug = params?.slug as string;
   const [loading, setLoading] = useState(false);
   const [fetchingEvent, setFetchingEvent] = useState(true);
   const [eventDetails, setEventDetails] = useState<Event | null>(null);

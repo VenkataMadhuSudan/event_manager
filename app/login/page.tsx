@@ -113,7 +113,7 @@ export default function UserLoginPage() {
 
           <div className="mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center">
             <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium">
-              Don't have an account?{" "}
+              Don&apos;t have an account?{" "}
               <Link href="/signup" className="text-black dark:text-white font-black uppercase tracking-tighter hover:underline">
                 Create One
               </Link>

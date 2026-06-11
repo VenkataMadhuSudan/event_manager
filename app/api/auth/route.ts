@@ -5,17 +5,19 @@ import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
   try {
-    const { username, password } = await req.json();
+    const body = await req.json();
+    const username = String(body.username ?? '').trim();
+    const password = String(body.password ?? '');
 
     if (!username || !password) {
       return NextResponse.json({ success: false, message: 'Missing credentials' }, { status: 400 });
     }
 
     // Check if any admins exist. If not, create the default one.
-    const adminCount = await (prisma as any).admin.count();
+    const adminCount = await prisma.admin.count();
     if (adminCount === 0) {
       const defaultHashedPassword = await bcrypt.hash('madhu@2006', 10);
-      await (prisma as any).admin.create({
+      await prisma.admin.create({
         data: {
           username: 'Madhu',
           password: defaultHashedPassword,
@@ -24,21 +26,37 @@ export async function POST(req: Request) {
     }
 
     // Check the database for the provided credentials
-    const admin: any = await (prisma as any).admin.findUnique({
-      where: { username },
+    const admin = await prisma.admin.findFirst({
+      where: {
+        username: {
+          equals: username,
+          mode: 'insensitive',
+        },
+      },
     });
 
     let isPasswordCorrect = false;
+    let legacyPlainTextPassword = false;
+
     if (admin) {
-      try {
-        isPasswordCorrect = await bcrypt.compare(password, admin.password);
-      } catch {
-        // Fallback for existing plain-text password compatibility
-        isPasswordCorrect = admin.password === password;
+      const storedPassword = admin.password ?? '';
+      const isBcryptHash = typeof storedPassword === 'string' && /^\$2[aby]\$/.test(storedPassword);
+
+      if (isBcryptHash) {
+        isPasswordCorrect = await bcrypt.compare(password, storedPassword);
+      } else {
+        legacyPlainTextPassword = true;
+        isPasswordCorrect = storedPassword === password;
       }
     }
 
     if (admin && isPasswordCorrect) {
+      if (legacyPlainTextPassword) {
+        await prisma.admin.update({
+          where: { id: admin.id },
+          data: { password: await bcrypt.hash(password, 10) },
+        });
+      }
       const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'super-secret-key');
       const token = await new SignJWT({ user: admin.username, id: admin.id })
         .setProtectedHeader({ alg: 'HS256' })

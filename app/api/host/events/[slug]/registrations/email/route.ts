@@ -63,19 +63,6 @@ export async function POST(
         return { success: false, error: 'No email address', studentId: student.id };
       }
 
-      const formattedDate = event.event_date ?
-        new Date(event.event_date).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZoneName: 'short'
-        }) : 'To Be Announced';
-
-      const formalVenue = event.venue || 'To Be Announced';
-
       return sendFormalConfirmationEmail({
         toEmail: student.email,
         studentName: student.name,
@@ -111,15 +98,19 @@ export async function POST(
       }
     });
 
+    const overallSuccess = failures.length === 0;
+
     return NextResponse.json({
-      success: true,
-      message: `Email sending completed. ${successCount} sent successfully, ${failures.length} failed.`,
+      success: overallSuccess,
+      message: overallSuccess
+        ? `Email sending completed. ${successCount} sent successfully.`
+        : `Email sending completed. ${successCount} sent successfully, ${failures.length} failed.`,
       data: {
         sent: successCount,
         failed: failures.length,
         failures
       }
-    });
+    }, overallSuccess ? { status: 200 } : { status: 500 });
 
   } catch (error) {
     console.error('Host Email Sending Error:', error);

@@ -5,6 +5,25 @@ import { cn } from "@/lib/utils";
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+
+type EventDetails = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+};
+
+type Registration = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  participants: number;
+  status: string;
+  checked_in: boolean;
+  checked_in_at?: string | null;
+  created_at: string;
+};
 import {
   Loader2,
   ArrowLeft,
@@ -21,7 +40,6 @@ import {
   Send,
   XCircle
 } from 'lucide-react';
-import { sendFormalConfirmationEmail } from '@/lib/email';
 import { motion, AnimatePresence } from 'framer-motion';
 import Papa from 'papaparse';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -31,8 +49,8 @@ export default function HostManageEventPage() {
   const slug = params?.slug as string;
   const router = useRouter();
   
-  const [event, setEvent] = useState<any>(null);
-  const [registrations, setRegistrations] = useState<any[]>([]);
+  const [event, setEvent] = useState<EventDetails | null>(null);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedParticipants, setSelectedParticipants] = useState<Set<string>>(new Set());
@@ -40,31 +58,33 @@ export default function HostManageEventPage() {
   const [emailResult, setEmailResult] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
-    if (slug) fetchEventData();
-  }, [slug]);
+    if (!slug) return;
 
-  const fetchEventData = async () => {
-    try {
-      const res = await fetch(`/api/host/events/${slug}`);
-      if (res.status === 401 || res.status === 403) {
-        toast.error("Unauthorized");
-        router.push('/my-events');
-        return;
+    const fetchEventData = async () => {
+      try {
+        const res = await fetch(`/api/host/events/${slug}`);
+        if (res.status === 401 || res.status === 403) {
+          toast.error("Unauthorized");
+          router.push('/my-events');
+          return;
+        }
+        if (res.ok) {
+          const data = await res.json();
+          setEvent(data.event);
+          setRegistrations(data.registrations || []);
+        } else {
+          toast.error("Event not found");
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Failed to sync data");
+      } finally {
+        setLoading(false);
       }
-      if (res.ok) {
-        const data = await res.json();
-        setEvent(data.event);
-        setRegistrations(data.registrations || []);
-      } else {
-        toast.error("Event not found");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to sync data");
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchEventData();
+  }, [slug, router]);
 
   const handleDeleteRegistration = async (id: string) => {
     if (!confirm("Are you sure you want to delete this registration? This action cannot be undone.")) return;
@@ -78,8 +98,9 @@ export default function HostManageEventPage() {
         setRegistrations(prev => prev.filter(r => r.id !== id));
         // Also remove from selected if present
         setSelectedParticipants(prev => {
-          prev.delete(id);
-          return new Set(prev);
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
         });
       } else {
         const data = await res.json();
@@ -381,7 +402,7 @@ export default function HostManageEventPage() {
                 <tbody className="divide-y divide-gray-100">
                   <AnimatePresence>
                     {filteredRegistrations.length > 0 ? (
-                      filteredRegistrations.map((reg: any, idx: number) => (
+                      filteredRegistrations.map((reg, idx: number) => (
                         <motion.tr
                           key={reg.id}
                           initial={{ opacity: 0, x: -10 }}

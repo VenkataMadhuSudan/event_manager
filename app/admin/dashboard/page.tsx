@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
-import { 
+import {
   Search, 
   Trash2, 
   Download, 
   Plus, 
-  Loader2, 
   Users, 
   Calendar, 
   TrendingUp, 

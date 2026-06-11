@@ -6,43 +6,68 @@ import { useRouter } from 'next/navigation';
 import { Calendar, Settings, MapPin, Loader2, LogOut, ArrowLeft, Plus, CheckCircle2, ChevronRight, ExternalLink, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Skeleton } from '@/components/ui/Skeleton';
+
+type User = {
+  name?: string;
+};
+
+type EventSummary = {
+  id: string;
+  slug: string;
+  banner_url?: string | null;
+  type?: string | null;
+  name: string;
+  event_date?: string | null;
+  created_at: string;
+  venue?: string | null;
+};
+
+type RegisteredEvent = {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  participants?: number;
+  status?: string;
+  eventRel?: { name?: string; slug?: string };
+  event?: string;
+};
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function MyEventsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'hosted' | 'registered'>('hosted');
-  const [user, setUser] = useState<any>(null);
-  const [hostedEvents, setHostedEvents] = useState<any[]>([]);
-  const [registeredEvents, setRegisteredEvents] = useState<any[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [hostedEvents, setHostedEvents] = useState<EventSummary[]>([]);
+  const [registeredEvents, setRegisteredEvents] = useState<RegisteredEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const userRes = await fetch('/api/user/me');
+        if (!userRes.ok) {
+          router.push('/login');
+          return;
+        }
+        const userData = await userRes.json();
+        setUser(userData.user);
+
+        const eventsRes = await fetch('/api/user/events');
+        if (eventsRes.ok) {
+          const eventsData = await eventsRes.json();
+          setHostedEvents(eventsData.hosted || []);
+          setRegisteredEvents(eventsData.registered || []);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      const userRes = await fetch('/api/user/me');
-      if (!userRes.ok) {
-        router.push('/login');
-        return;
-      }
-      const userData = await userRes.json();
-      setUser(userData.user);
-
-      // Fetch hosted and registered events
-      const eventsRes = await fetch('/api/user/events');
-      if (eventsRes.ok) {
-        const eventsData = await eventsRes.json();
-        setHostedEvents(eventsData.hosted || []);
-        setRegisteredEvents(eventsData.registered || []);
-      }
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [router]);
 
   const handleLogout = async () => {
     await fetch('/api/user/logout', { method: 'POST' });
@@ -211,7 +236,7 @@ export default function MyEventsPage() {
                     <div className="col-span-full py-32 text-center bg-white/50 border-4 border-dashed border-gray-100">
                       <div className="flex flex-col items-center opacity-30">
                         <Users className="w-12 h-12 mb-4" />
-                        <p className="text-sm font-black uppercase tracking-[0.3em]">You haven't registered for any events</p>
+                        <p className="text-sm font-black uppercase tracking-[0.3em]">You haven&apos;t registered for any events</p>
                       </div>
                     </div>
                   )}

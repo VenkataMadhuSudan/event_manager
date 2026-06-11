@@ -16,7 +16,6 @@ import {
   Save,
   X,
   LayoutGrid,
-  Link2,
   Settings2,
   ArrowLeft
 } from "lucide-react";

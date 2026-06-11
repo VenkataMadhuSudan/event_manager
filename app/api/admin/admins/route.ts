@@ -8,7 +8,7 @@ export async function GET() {
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const admins = await (prisma as any).admin.findMany({
+    const admins = await prisma.admin.findMany({
       select: {
         id: true,
         username: true,
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newAdmin = await (prisma as any).admin.create({
+    const newAdmin = await prisma.admin.create({
       data: {
         username,
         password: hashedPassword,
@@ -48,8 +48,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(newAdmin);
 
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error) {
+    const caughtError = error as { code?: string; message?: string };
+    if (caughtError.code === 'P2002') {
       return NextResponse.json({ error: 'Username already exists' }, { status: 400 });
     }
     console.error('Add Admin Error:', error);

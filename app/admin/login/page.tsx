@@ -16,7 +16,9 @@ export default function LoginPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData.entries());
+    const username = String(formData.get('username') ?? '').trim().toLowerCase();
+    const password = String(formData.get('password') ?? '');
+    const data = { username, password };
 
     try {
       const res = await fetch('/api/auth', {

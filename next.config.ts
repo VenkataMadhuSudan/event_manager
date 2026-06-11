@@ -12,6 +12,6 @@ const nextConfig: NextConfig = {
       "@tsparticles/slim"
     ]
   }
-} as any;
+} as NextConfig;
 
 export default nextConfig;
