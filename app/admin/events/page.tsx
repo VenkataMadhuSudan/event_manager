@@ -206,8 +206,8 @@ export default function EventsAdminPage() {
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span className="text-[10px] font-black uppercase tracking-widest">Back to Dashboard</span>
           </Link>
-          <h1 className="text-5xl font-black text-black dark:text-white tracking-tighter uppercase italic">Event <span className="text-sky-600">Repository</span></h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium flex items-center gap-2 uppercase text-xs tracking-widest">
+          <h1 className="text-5xl font-black text-black tracking-tighter uppercase italic">Event <span className="text-sky-600">Repository</span></h1>
+          <p className="text-zinc-500 mt-2 font-medium flex items-center gap-2 uppercase text-xs tracking-widest">
             <LayoutGrid className="w-4 h-4" /> Global Catalog Management
           </p>
         </motion.div>
@@ -227,8 +227,8 @@ export default function EventsAdminPage() {
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white shadow-[10px_10px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
-        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50">
+      <div className="bg-white border-2 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="p-6 border-b border-zinc-100 bg-zinc-50/80">
           <div className="relative max-w-2xl">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
             <input
@@ -236,7 +236,7 @@ export default function EventsAdminPage() {
               placeholder="Search by event name or slug..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-black transition-all font-bold"
             />
           </div>
         </div>
@@ -275,7 +275,7 @@ export default function EventsAdminPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
+                      className="hover:bg-zinc-50 transition-colors group"
                     >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
@@ -283,7 +283,7 @@ export default function EventsAdminPage() {
                             <Calendar className="w-5 h-5" />
                           </div>
                           <div>
-                            <span className="font-black text-black dark:text-white text-lg block tracking-tighter uppercase italic leading-none mb-1">{event.name}</span>
+                            <span className="font-black text-black text-lg block tracking-tighter uppercase italic leading-none mb-1">{event.name}</span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Created {new Date(event.created_at).toLocaleDateString()}</span>
                           </div>
                         </div>
@@ -297,7 +297,7 @@ export default function EventsAdminPage() {
                         </span>
                       </td>
                       <td className="px-8 py-6">
-                        <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 p-2 shadow-sm w-fit group-hover:border-sky-400 transition-colors">
+                        <div className="flex items-center gap-2 bg-white border border-zinc-200 p-2 shadow-sm w-fit group-hover:border-sky-400 transition-colors">
                           <span className="text-[10px] font-mono text-zinc-500 uppercase">/{event.slug}</span>
                           <div className="h-4 w-[1px] bg-zinc-200 mx-1"></div>
                           <button onClick={() => copyToClipboard(event.slug)} className="p-1 hover:text-sky-600">
@@ -312,15 +312,15 @@ export default function EventsAdminPage() {
                         <div className="flex justify-end gap-2">
                           {event.status !== 'CANCELLED' && (
                             <>
-                              <button onClick={() => handleEditClick(event)} className="p-3 bg-zinc-50 dark:bg-zinc-800 hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition-all border border-zinc-200 dark:border-zinc-700">
+                              <button onClick={() => handleEditClick(event)} className="p-3 bg-zinc-50 hover:bg-black hover:text-white transition-all border border-zinc-200">
                                 <Pencil className="w-4 h-4" />
                               </button>
-                              <button onClick={() => handleCancel(event.id)} className="p-3 bg-zinc-50 dark:bg-zinc-800 hover:bg-orange-500 hover:text-white transition-all border border-zinc-200 dark:border-zinc-700">
+                              <button onClick={() => handleCancel(event.id)} className="p-3 bg-zinc-50 hover:bg-orange-500 hover:text-white transition-all border border-zinc-200">
                                 <XCircle className="w-4 h-4" />
                               </button>
                             </>
                           )}
-                          <button onClick={() => handleDelete(event.id)} className="p-3 bg-zinc-50 dark:bg-zinc-800 hover:bg-red-500 hover:text-white transition-all border border-zinc-200 dark:border-zinc-700">
+                          <button onClick={() => handleDelete(event.id)} className="p-3 bg-zinc-50 hover:bg-red-500 hover:text-white transition-all border border-zinc-200">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -342,9 +342,9 @@ export default function EventsAdminPage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] overflow-y-auto border-4 border-black dark:border-white shadow-[30px_30px_0px_0px_rgba(0,0,0,0.2)]"
+              className="bg-white w-full max-w-4xl max-h-[90vh] overflow-y-auto border-4 border-black shadow-[30px_30px_0px_0px_rgba(0,0,0,0.2)]"
             >
-              <div className="sticky top-0 bg-white dark:bg-zinc-900 p-8 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center z-10">
+              <div className="sticky top-0 bg-white p-8 border-b border-zinc-100 flex justify-between items-center z-10">
                 <h2 className="text-3xl font-black uppercase italic tracking-tighter flex items-center gap-3">
                   <Settings2 className="w-8 h-8 text-sky-600" />
                   Override <span className="text-sky-600">Protocol</span>
@@ -362,7 +362,7 @@ export default function EventsAdminPage() {
                       type="text"
                       value={editingEvent.name}
                       onChange={(e) => setEditingEvent({ ...editingEvent, name: e.target.value })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-black text-xl transition-all italic uppercase tracking-tighter"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-black text-xl transition-all italic uppercase tracking-tighter"
                     />
                   </div>
 
@@ -371,7 +371,7 @@ export default function EventsAdminPage() {
                     <select
                       value={editingEvent.type}
                       onChange={(e) => setEditingEvent({ ...editingEvent, type: e.target.value })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-black uppercase tracking-widest text-xs appearance-none"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-black uppercase tracking-widest text-xs appearance-none"
                     >
                       <option value="Conference">Conference</option>
                       <option value="Workshop">Workshop</option>
@@ -444,7 +444,7 @@ export default function EventsAdminPage() {
                     <button
                       type="button"
                       onClick={() => setIsEditModalOpen(false)}
-                      className="flex-1 bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 py-6 font-black uppercase tracking-widest text-xs hover:bg-zinc-200 dark:hover:bg-white/10 transition-all"
+                      className="flex-1 bg-zinc-100 text-zinc-600 py-6 font-black uppercase tracking-widest text-xs hover:bg-zinc-200 transition-all"
                     >
                       Abort
                     </button>

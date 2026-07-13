@@ -136,8 +136,8 @@ export default function DashboardPage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
         >
-          <h1 className="text-5xl font-black text-black dark:text-white tracking-tighter uppercase">Admin Dashboard</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-2 font-medium flex items-center gap-2">
+          <h1 className="text-5xl font-black text-black tracking-tighter uppercase">Admin Dashboard</h1>
+          <p className="text-zinc-500 mt-2 font-medium flex items-center gap-2">
             <ShieldAlert className="w-4 h-4" /> Global Platform Overview & Management
           </p>
         </motion.div>
@@ -149,14 +149,14 @@ export default function DashboardPage() {
         >
           <button 
             onClick={fetchStudents}
-            className="p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
+            className="p-4 bg-white border border-zinc-200 hover:bg-zinc-50 transition-colors shadow-sm"
             title="Refresh Data"
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin text-sky-600' : ''}`} />
           </button>
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-6 py-4 rounded-none hover:bg-zinc-50 dark:hover:bg-zinc-800 font-black transition-all shadow-lg uppercase tracking-widest text-xs"
+            className="flex items-center gap-2 bg-white border border-zinc-200 px-6 py-4 rounded-none hover:bg-zinc-50 font-black transition-all shadow-lg uppercase tracking-widest text-xs"
           >
             <Download className="w-4 h-4" />
             <span>Export Master List</span>
@@ -176,7 +176,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {loading ? (
           Array(4).fill(0).map((_, i) => (
-            <div key={i} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 space-y-4 shadow-sm">
+            <div key={i} className="bg-white border border-zinc-200 p-6 space-y-4 shadow-sm">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-10 w-16" />
             </div>
@@ -188,14 +188,14 @@ export default function DashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1 }}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-md hover:shadow-xl transition-shadow relative overflow-hidden group"
+              className="bg-white border border-zinc-200 p-6 shadow-md hover:shadow-xl transition-shadow relative overflow-hidden group"
             >
               <div className="absolute right-[-10px] top-[-10px] opacity-[0.05] group-hover:opacity-10 transition-opacity">
                 <stat.icon className="w-24 h-24 rotate-12" />
               </div>
               <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{stat.label}</p>
               <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black text-black dark:text-white tracking-tighter">{stat.value}</span>
+                <span className="text-4xl font-black text-black tracking-tighter">{stat.value}</span>
               </div>
             </motion.div>
           ))
@@ -203,8 +203,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Main Table Section */}
-      <div className="bg-white dark:bg-zinc-900 border-2 border-black dark:border-white shadow-[10px_10px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
-        <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/50 flex flex-col sm:flex-row gap-4">
+      <div className="bg-white border-2 border-black shadow-[10px_10px_0px_0px_rgba(0,0,0,0.05)] overflow-hidden">
+        <div className="p-6 border-b border-zinc-100 bg-zinc-50/80 flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 w-5 h-5" />
             <input 
@@ -212,11 +212,11 @@ export default function DashboardPage() {
               placeholder="Filter by name, email or phone..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all font-bold"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-black transition-all font-bold"
             />
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div className="flex items-center gap-2 px-4 py-4 bg-white border border-zinc-200">
               <Filter className="w-4 h-4 text-zinc-400" />
               <select 
                 value={filterEvent} 
@@ -268,23 +268,23 @@ export default function DashboardPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group"
+                      className="hover:bg-zinc-50 transition-colors group"
                     >
                       <td className="px-8 py-6">
                         <div className="flex flex-col">
-                          <span className="font-black text-black dark:text-white text-base">{student.name}</span>
+                          <span className="font-black text-black text-base">{student.name}</span>
                           <span className="text-zinc-500 font-medium text-xs tracking-tight">{student.email}</span>
                         </div>
                       </td>
                       <td className="px-8 py-6">
                         <div className="flex flex-col">
-                          <span className="inline-flex items-center px-3 py-1 rounded-none text-[10px] font-black uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700 w-fit">
+                          <span className="inline-flex items-center px-3 py-1 rounded-none text-[10px] font-black uppercase tracking-widest bg-zinc-100 text-zinc-900 border border-zinc-200 w-fit">
                             {student.event}
                           </span>
                           <span className="text-[10px] text-zinc-400 mt-1 font-mono uppercase">{student.phone}</span>
                         </div>
                       </td>
-                      <td className="px-8 py-6 text-center font-black text-black dark:text-white">{student.participants}</td>
+                      <td className="px-8 py-6 text-center font-black text-black">{student.participants}</td>
                       <td className="px-8 py-6">
                         <span className={`inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest border-2 ${
                           student.status === 'CANCELLED' 

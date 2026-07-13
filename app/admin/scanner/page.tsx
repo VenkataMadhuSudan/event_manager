@@ -112,7 +112,7 @@ export default function ScannerPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 1.05 }}
-                className="flex flex-col items-center justify-center h-full p-12 text-center bg-white dark:bg-zinc-900"
+                className="flex flex-col items-center justify-center h-full p-12 text-center bg-white"
               >
                 {result?.status === 'VALID' ? (
                   <div className="space-y-8 w-full max-w-sm">
@@ -124,7 +124,7 @@ export default function ScannerPage() {
                     </motion.div>
                     <h3 className="text-4xl font-black text-black dark:text-white uppercase tracking-tighter italic">Access <span className="text-emerald-500">Granted</span></h3>
                     
-                    <div className="bg-zinc-50 dark:bg-white/5 p-8 border-2 border-emerald-100 dark:border-emerald-900/30 text-left space-y-4">
+                    <div className="bg-zinc-50 p-8 border-2 border-emerald-100 text-left space-y-4">
                       <div>
                         <p className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Attendee</p>
                         <p className="text-xl font-black text-black dark:text-white flex items-center gap-2"><User className="w-5 h-5 text-emerald-500" /> {result.student?.name}</p>
@@ -150,7 +150,7 @@ export default function ScannerPage() {
                     <h3 className="text-4xl font-black text-black dark:text-white uppercase tracking-tighter italic">
                       {result?.status === 'ALREADY_CHECKED_IN' ? <>Already <span className="text-orange-500">In</span></> : <>Access <span className="text-red-500">Denied</span></>}
                     </h3>
-                    <p className="text-zinc-500 font-bold bg-zinc-100 dark:bg-white/5 p-6 border-2 border-zinc-200 dark:border-zinc-800">
+                    <p className="text-zinc-500 font-bold bg-zinc-100 p-6 border-2 border-zinc-200">
                       {result?.message || (result?.status === 'ALREADY_CHECKED_IN' ? 'This ticket was already scanned and used for entry.' : 'This QR code is invalid or not recognized by the system.')}
                     </p>
                   </div>
@@ -170,7 +170,7 @@ export default function ScannerPage() {
 
         {/* Instructions Panel */}
         <div className="lg:col-span-5 space-y-8">
-          <div className="bg-zinc-50 dark:bg-zinc-900 border-2 border-zinc-200 dark:border-zinc-800 p-10 shadow-lg">
+          <div className="bg-zinc-50 border-2 border-zinc-200 p-10 shadow-lg">
             <h3 className="font-black text-2xl mb-10 text-black dark:text-white uppercase tracking-tighter italic border-b-4 border-sky-600 pb-2 inline-block">Scanner Protocol</h3>
             <div className="space-y-8">
               {[
@@ -180,7 +180,7 @@ export default function ScannerPage() {
                 { step: 4, text: "Reset the terminal after each successful validation.", icon: RefreshCcw }
               ].map((item, i) => (
                 <div key={i} className="flex gap-6 group">
-                  <div className="flex-shrink-0 w-12 h-12 bg-white dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-black text-black dark:text-white group-hover:bg-black group-hover:text-white dark:group-hover:bg-white dark:group-hover:text-black transition-all">
+                  <div className="flex-shrink-0 w-12 h-12 bg-white border-2 border-zinc-200 flex items-center justify-center font-black text-black group-hover:bg-black group-hover:text-white transition-all">
                     <item.icon className="w-5 h-5" />
                   </div>
                   <div>

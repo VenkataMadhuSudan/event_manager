@@ -59,7 +59,7 @@ export default function LoginPage() {
           <span className="text-sm font-bold uppercase tracking-widest">Back to Home</span>
         </Link>
 
-        <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl p-8 border-4 border-black dark:border-white shadow-[20px_20px_0px_0px_rgba(0,0,0,0.1)] dark:shadow-[20px_20px_0px_0px_rgba(255,255,255,0.05)]">
+        <div className="bg-white/80 backdrop-blur-xl p-8 border-4 border-black shadow-[20px_20px_0px_0px_rgba(0,0,0,0.1)]">
           <div className="mb-10 text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-sky-600 text-white mb-6 transform rotate-3 shadow-xl">
               <ShieldAlert className="w-10 h-10" />
