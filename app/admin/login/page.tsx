@@ -79,7 +79,7 @@ export default function LoginPage() {
                   type="text"
                   placeholder="Enter Admin ID"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 focus:border-sky-600 outline-none transition-all font-bold"
+                  className="w-full pl-12 pr-4 py-4 bg-zinc-50 border-2 border-zinc-200 focus:border-sky-600 outline-none transition-all font-bold"
                 />
               </div>
             </div>
@@ -94,7 +94,7 @@ export default function LoginPage() {
                   type="password"
                   placeholder="••••••••"
                   required
-                  className="w-full pl-12 pr-4 py-4 bg-zinc-50 dark:bg-zinc-800/50 border-2 border-zinc-200 dark:border-zinc-700 focus:border-sky-600 outline-none transition-all font-bold"
+                  className="w-full pl-12 pr-4 py-4 bg-zinc-50 border-2 border-zinc-200 focus:border-sky-600 outline-none transition-all font-bold"
                 />
               </div>
             </div>
@@ -115,7 +115,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-8 border-t border-zinc-100 dark:border-zinc-800 text-center">
+          <div className="mt-8 pt-8 border-t border-zinc-100 text-center">
             <p className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">
               Authorized Personnel Only
             </p>

@@ -388,7 +388,7 @@ export default function EventsAdminPage() {
                       type="text"
                       value={editingEvent.venue || ''}
                       onChange={(e) => setEditingEvent({ ...editingEvent, venue: e.target.value })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-bold"
                     />
                   </div>
 
@@ -398,7 +398,7 @@ export default function EventsAdminPage() {
                       type="date"
                       value={editingEvent.event_date || ''}
                       onChange={(e) => setEditingEvent({ ...editingEvent, event_date: e.target.value })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-bold"
                     />
                   </div>
 
@@ -408,7 +408,7 @@ export default function EventsAdminPage() {
                       type="date"
                       value={editingEvent.end_date || ''}
                       onChange={(e) => setEditingEvent({ ...editingEvent, end_date: e.target.value })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-bold"
                     />
                   </div>
 
@@ -418,7 +418,7 @@ export default function EventsAdminPage() {
                       type="date"
                       value={editingEvent.last_date_to_register || ''}
                       onChange={(e) => setEditingEvent({ ...editingEvent, last_date_to_register: e.target.value })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-bold"
                     />
                   </div>
 
@@ -428,7 +428,7 @@ export default function EventsAdminPage() {
                       type="number"
                       value={editingEvent.max_attendees || ''}
                       onChange={(e) => setEditingEvent({ ...editingEvent, max_attendees: parseInt(e.target.value) || 0 })}
-                      className="w-full p-5 bg-zinc-50 dark:bg-white/5 border-2 border-zinc-100 dark:border-zinc-800 focus:border-black dark:focus:border-white outline-none font-bold"
+                      className="w-full p-5 bg-zinc-50 border-2 border-zinc-100 focus:border-black outline-none font-bold"
                     />
                   </div>
 
