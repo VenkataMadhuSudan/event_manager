@@ -218,7 +218,7 @@ export default function EventsAdminPage() {
         >
           <Link
             href="/"
-            className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-8 py-4 rounded-none hover:opacity-90 font-black transition-all shadow-xl uppercase tracking-widest text-xs"
+            className="flex items-center gap-2 bg-white text-black border border-zinc-200 px-8 py-4 rounded-none hover:bg-zinc-100 font-black transition-all shadow-xl uppercase tracking-widest text-xs"
           >
             <Plus className="w-4 h-4" />
             <span>Create Event</span>
@@ -243,7 +243,7 @@ export default function EventsAdminPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px]">
+            <thead className="bg-zinc-100 text-black font-black uppercase tracking-widest text-[10px]">
               <tr>
                 <th className="px-8 py-4">Event Identity</th>
                 <th className="px-8 py-4">Deployment Status</th>
@@ -279,7 +279,7 @@ export default function EventsAdminPage() {
                     >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+                          <div className="w-12 h-12 bg-zinc-100 text-black flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
                             <Calendar className="w-5 h-5" />
                           </div>
                           <div>
@@ -337,7 +337,7 @@ export default function EventsAdminPage() {
       {/* Edit Modal */}
       <AnimatePresence>
         {isEditModalOpen && editingEvent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/10 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -436,7 +436,7 @@ export default function EventsAdminPage() {
                     <button
                       type="submit"
                       disabled={updateLoading}
-                      className="flex-1 bg-black dark:bg-white text-white dark:text-black py-6 font-black uppercase tracking-widest text-xs hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-2xl active:scale-95 disabled:opacity-50"
+                      className="flex-1 bg-white text-black border border-zinc-200 py-6 font-black uppercase tracking-widest text-xs hover:bg-zinc-100 transition-all flex items-center justify-center gap-2 shadow-2xl active:scale-95 disabled:opacity-50"
                     >
                       {updateLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />}
                       Sync Changes

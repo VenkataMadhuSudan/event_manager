@@ -83,7 +83,7 @@ export default function ScannerPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Scanner Viewport */}
-        <div className="lg:col-span-7 bg-black dark:bg-zinc-900 border-4 border-black dark:border-white shadow-[15px_15px_0px_0px_rgba(0,0,0,0.1)] relative overflow-hidden aspect-video md:aspect-square lg:aspect-auto lg:min-h-[600px]">
+        <div className="lg:col-span-7 bg-white border-4 border-zinc-200 shadow-[15px_15px_0px_0px_rgba(0,0,0,0.1)] relative overflow-hidden aspect-video md:aspect-square lg:aspect-auto lg:min-h-[600px]">
           <AnimatePresence mode="wait">
             {!paused ? (
               <motion.div 
@@ -101,7 +101,7 @@ export default function ScannerPage() {
                   sound={false}
                 />
                 <div className="absolute inset-0 pointer-events-none border-[40px] border-black/40"></div>
-                <div className="absolute top-8 left-8 flex items-center gap-2 px-3 py-1.5 bg-black/60 backdrop-blur-md border border-white/20 text-white">
+                <div className="absolute top-8 left-8 flex items-center gap-2 px-3 py-1.5 bg-white/80 backdrop-blur-md border border-zinc-200 text-black">
                   <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
                   <span className="text-[10px] font-black uppercase tracking-widest">Live Feed</span>
                 </div>
@@ -158,7 +158,7 @@ export default function ScannerPage() {
 
                 <button
                   onClick={resetScanner}
-                  className="mt-12 flex items-center gap-3 bg-black dark:bg-white text-white dark:text-black px-10 py-5 hover:opacity-90 font-black transition-all shadow-xl uppercase tracking-widest text-xs group active:scale-95"
+                  className="mt-12 flex items-center gap-3 bg-white text-black border border-zinc-200 px-10 py-5 hover:bg-zinc-100 font-black transition-all shadow-xl uppercase tracking-widest text-xs group active:scale-95"
                 >
                   <QrCode className="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" />
                   Continue Scanning

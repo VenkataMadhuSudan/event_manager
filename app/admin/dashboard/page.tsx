@@ -164,7 +164,7 @@ export default function DashboardPage() {
           <Link 
             href="/register"
             target="_blank"
-            className="flex items-center gap-2 bg-black dark:bg-white text-white dark:text-black px-6 py-4 rounded-none hover:opacity-90 font-black transition-all shadow-xl uppercase tracking-widest text-xs"
+            className="flex items-center gap-2 bg-white text-black border border-zinc-200 px-6 py-4 rounded-none hover:bg-zinc-100 font-black transition-all shadow-xl uppercase tracking-widest text-xs"
           >
             <Plus className="w-4 h-4" />
             <span>Add Student</span>
@@ -234,7 +234,7 @@ export default function DashboardPage() {
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-black dark:bg-white text-white dark:text-black font-black uppercase tracking-widest text-[10px]">
+            <thead className="bg-zinc-100 text-black font-black uppercase tracking-widest text-[10px]">
               <tr>
                 <th className="px-8 py-4">Participant</th>
                 <th className="px-8 py-4">Event Context</th>
