@@ -96,7 +96,7 @@ function HomeContent() {
       {showIntro && (
         <IntroScreen onComplete={() => setShowIntro(false)} />
       )}
-      <div className="flex flex-col min-h-screen font-sans overflow-x-hidden">
+      <div className="flex flex-col min-h-screen font-sans overflow-x-hidden bg-white">
         {/* Navbar */}
         <header className="px-6 lg:px-12 h-16 flex items-center border-b glass-morphism sticky top-0 z-50">
           <button onClick={() => setView('selection')} className="flex items-center gap-2 group">
